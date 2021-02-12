@@ -130,24 +130,37 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 
 	}, [tagMode]);
 
-	//TODO
-	// function setCaretPosition(pos) {
+	//sets caret position to end
+	function setCaretPosition(pos: number) {
 
-	// 	var sel; 
-	// 	text.current.focus();
+		text.current.focus();
+		if (typeof window.getSelection != "undefined"
+				&& typeof document.createRange != "undefined") {
+			var range = document.createRange();
+			range.selectNodeContents(text.current);
+			range.collapse(false);
+			var sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(range);
+			// @ts-ignore
+		} else if (typeof document.body.createTextRange != "undefined") {
+			// @ts-ignore
+			var textRange = document.body.createTextRange();
+			textRange.moveToElementText(text.current);
+			textRange.collapse(false);
+			textRange.select();
+		}
 		
-	// 	   sel = window.getSelection();
-	// 	  sel.collapse(text.current.firstChild, pos);
-		
-	// }
+	}
 
 	const injectHTMLAtCaret = useCallback((html: string) => { //TODO REFACTOR FOR OLDER BROWSERS
 		var sel: Selection, range: Range;
 		if (window.getSelection) { //checks if browser IE9 > and non-IE
-			
 			sel = window.getSelection(); //returns the current position of caret
+			console.log(sel);
 			if (sel.getRangeAt && sel.rangeCount) {
 				range = sel.getRangeAt(0);
+				
 				range.deleteContents();
 	
 				
@@ -170,9 +183,11 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 					sel.addRange(range);
 				}
 			}
-		// } else if ( document.selection && document.selection.type != "Control" ) {
-		// 	IE < 9
-		// 	document.selection.createRange().pasteHTML( html );
+			//@ts-ignore
+		} else if ( document.selection && document.selection.type != "Control" ) {
+			//IE < 9
+			//@ts-ignore 			
+			document.selection.createRange().pasteHTML( html );
 		}
 	}, [tagMode])
 
@@ -188,12 +203,9 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 
 		
 		if(evt.keyCode == 13 && tagMode){ //if tag mode enabled and pressed enter
-			// const lastCaretPosition = caretPosition + 8
+			const lastCaretPosition = caretPosition + 8
 			
 			const newTag = tagText.slice(tagStartIndex, caretPosition); //get text between last caret position and prefix
-
-			
-
 
 			injectHTMLAtCaret(`<span
 				class="test__span"
@@ -203,6 +215,8 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 			</span>`)
 	
 			removePattern(newTag); //delete prefix value after adding tag
+			
+			setCaretPosition(lastCaretPosition)
 	
 			dispatch({
 				type: "setTagMode",
@@ -214,7 +228,6 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 			payload: text.current.textContent,
 		});
 		
-
 	};
 
 	return (
