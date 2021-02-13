@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useEffect, useReducer } from "react";
 
 import "./mystyles.scss";
 
-import { position } from "caret-pos";
+import { position, offset } from "caret-pos";
 
 interface Props {}
 
@@ -11,20 +11,23 @@ interface IState {
 	tagInput: string;
 	caretPosition: number;
 	tagMode: boolean;
-	tags: HTMLElement[]
+	tags: HTMLElement[];
 }
 
 type ACTIONTYPE =
-  | { type: "setTagStartIndex"; payload: number }
-  | { type: "setCaretPosition"; payload: {
-	  height: number;
-	  left: number;
-	  top: number;
-	  pos: number;
-  }}
-  | {type: "setTagInput"; payload: string}
-  | {type: "setTagMode"; payload: boolean}
-  | {type: "addTag"; payload: any} //TODO
+	| { type: "setTagStartIndex"; payload: number }
+	| {
+			type: "setCaretPosition";
+			payload: {
+				height: number;
+				left: number;
+				top: number;
+				pos: number;
+			};
+	  }
+	| { type: "setTagInput"; payload: string }
+	| { type: "setTagMode"; payload: boolean }
+	| { type: "addTag"; payload: any }; //TODO
 
 const initialState: IState = {
 	tagStartIndex: 0,
@@ -70,182 +73,168 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 const Tagcan: React.FunctionComponent<Props> = () => {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
-	const {
-		tagStartIndex,
-		caretPosition,
-		tagInput,
-		tagMode,
-		tags,
-		
-	} = state;
+	const { tagStartIndex, caretPosition, tagInput, tagMode, tags } = state;
 
 	const text = useRef(null);
 
-	const removePattern = (prefixValue: string) => {
 
-		//remove prefix value
-		text.current.innerHTML = text.current.innerHTML.replace(
-			`@${prefixValue}`,
-			""
-		);
-	};
-
-	//when @ pressed we take record
-	//of caret
-	useEffect(() => {
-		if (tagMode) {
-			dispatch({
-				type: "setTagStartIndex",
-				payload: caretPosition,
-			});
-		}
-	}, [tagMode]);
-
-	useEffect(() => {
-		//when pressed @ enable tag mode
-		if (text.current.textContent[caretPosition - 1] == '@') {
-			dispatch({
-				type: "setTagMode",
-				payload: true,
-			});
-		}
-
-		//if prefix removed disable tag mode
-		if(tagMode && text.current.textContent[tagStartIndex - 1] != "@"){
-			dispatch({
-				type: "setTagMode",
-				payload: false,
-			});
-		}
-
-
-	}, [caretPosition]);
-
-
-	const keyDownHandler = useCallback((evt: React.KeyboardEvent) => {
+	const keyDownHandler = (evt: React.KeyboardEvent) => {
 		//if you are in tag mode disable new line when press enter
 		if (evt.keyCode == 13 && tagMode) {
 			evt.preventDefault();
-		}	 
+		}
+	};
 
-	}, [tagMode]);
+	const injectHTMLAtCaret = useCallback(
+		(html: string) => {
+			//TODO REFACTOR FOR OLDER BROWSERS
+			var sel: Selection, range: Range;
+			
+			if (window.getSelection) {
+				//checks if browser IE9 > and non-IE
+				sel = window.getSelection(); //returns the current position of caret
+				if (sel.getRangeAt && sel.rangeCount) {
+					range = sel.getRangeAt(0);
+					console.log(range);
+					range.deleteContents();
+					console.log(range);
 
-	//sets caret position to end
-	function setCaretPosition(pos: number) {
+					var el = document.createElement("div") as HTMLDivElement;
+					el.innerHTML = html;
+					var frag = document.createDocumentFragment(), //we will append tags to this newly created empty object
+						node: ChildNode,
+						lastNode: Node;
+					while ((node = el.firstChild)) {
+						console.log(el.firstChild);
+						lastNode = frag.appendChild(node);
+						console.log(lastNode);
+					}
+					
+					range.insertNode(frag);
 
-		text.current.focus();
-		if (typeof window.getSelection != "undefined"
-				&& typeof document.createRange != "undefined") {
-			var range = document.createRange();
-			range.selectNodeContents(text.current);
-			range.collapse(false);
-			var sel = window.getSelection();
-			sel.removeAllRanges();
-			sel.addRange(range);
-			// @ts-ignore
-		} else if (typeof document.body.createTextRange != "undefined") {
-			// @ts-ignore
-			var textRange = document.body.createTextRange();
-			textRange.moveToElementText(text.current);
-			textRange.collapse(false);
-			textRange.select();
+					// Preserve the selection
+					if (lastNode) {
+						range = range.cloneRange();
+						range.setStartAfter(lastNode);
+						range.collapse(true);
+						sel.removeAllRanges();
+						sel.addRange(range);
+					}
+				}
+				
+			} else if (
+				//@ts-ignore
+				document.selection &&
+				//@ts-ignore
+				document.selection.type != "Control"
+			) {
+				//IE < 9
+				//@ts-ignore
+				document.selection.createRange().pasteHTML(html);
+			}
+		},
+		[tagMode]
+	);
+
+
+	
+	function addTag(search, replace) {
+		var sel = window.getSelection();
+		if (!sel.focusNode) {
+			return;
+		}
+
+		var startIndex = sel.focusNode.nodeValue.indexOf(search);
+		var endIndex = startIndex + search.length;
+		if (startIndex === -1) {
+			return;
 		}
 		
+		var range = document.createRange();
+		//Set the range to contain search text
+		range.setStart(sel.focusNode, startIndex - 1);
+		range.setEnd(sel.focusNode, endIndex + 1);
+		//Delete search text
+		range.deleteContents();
+		
+		//Insert replace text
+		injectHTMLAtCaret(replace);
 	}
-
-	const injectHTMLAtCaret = useCallback((html: string) => { //TODO REFACTOR FOR OLDER BROWSERS
-		var sel: Selection, range: Range;
-		if (window.getSelection) { //checks if browser IE9 > and non-IE
-			sel = window.getSelection(); //returns the current position of caret
-			console.log(sel);
-			if (sel.getRangeAt && sel.rangeCount) {
-				range = sel.getRangeAt(0);
-				
-				range.deleteContents();
-	
-				
-				var el = document.createElement("div") as HTMLDivElement;
-				el.innerHTML = html;
-				var frag = document.createDocumentFragment(), //we will append tags to this newly created empty object
-						node: ChildNode, 
-						lastNode: Node;
-				while ( (node = el.firstChild) ) {
-					lastNode = frag.appendChild(node);
-				}
-				range.insertNode(frag);
-				
-				// Preserve the selection
-				if (lastNode) {
-					range = range.cloneRange();
-					range.setStartAfter(lastNode);
-					range.collapse(true);
-					sel.removeAllRanges();
-					sel.addRange(range);
-				}
-			}
-			//@ts-ignore
-		} else if ( document.selection && document.selection.type != "Control" ) {
-			//IE < 9
-			//@ts-ignore 			
-			document.selection.createRange().pasteHTML( html );
-		}
-	}, [tagMode])
 
 	const keyUpHandler = (evt: React.KeyboardEvent) => {
 		const tagText = text.current.textContent;
 
-		console.log(position(text.current));
-
 		dispatch({
 			type: "setCaretPosition",
-			payload: position(text.current),
-		});
+			payload: position(text.current)
+		})
 
-		
-		if(evt.keyCode == 13 && tagMode){ //if tag mode enabled and pressed enter
-			const lastCaretPosition = caretPosition + 8
-			
-			const newTag = tagText.slice(tagStartIndex, caretPosition); //get text between last caret position and prefix
-
-			injectHTMLAtCaret(`<span
-				class="test__span"
-				contenteditable='false'
-			>
-				${newTag}
-			</span>`)
-	
-			removePattern(newTag); //delete prefix value after adding tag
-			
-			setCaretPosition(lastCaretPosition)
-	
-			dispatch({
-				type: "setTagMode",
-				payload: false,
-			});
+		if(tagText.match(/[^{\}]+(?=})/g)){
+			const newTag = tagText.match(/[^{\}]+(?=})/g)[0]
+			addTag(
+				newTag,
+				`<div
+					contenteditable='false'
+					class="tag"
+					>
+					<div>
+						<span
+						class="test__span"
+						>
+							${newTag}
+						</span>
+					</div>
+				</div>`
+			);
 		}
+
+
 		dispatch({
 			type: "setTagInput",
-			payload: text.current.textContent,
+			payload: text.current.innerText,
 		});
-		
+
 	};
 
-	return (
+	const test = () => {
+		text.current.focus()
+		position(text.current, caretPosition)
+
+		injectHTMLAtCaret(`<div
+		contenteditable='false'
+		class="tag"
+		>
 		<div>
+			<span
+			class="test__span"
+			>
+				asd
+			</span>
+		</div>
+	</div>`)
+	}
+
+	const saveCaret = () => {
+		dispatch({
+			type: "setCaretPosition",
+			payload: position(text.current)
+		})
+	}
+
+	return (
+		<div >
 			<div
 				className='tag__input'
 				contentEditable='true'
 				ref={text}
 				onKeyUp={e => {
-					
 					keyUpHandler(e);
 				}}
 				onKeyDown={keyDownHandler}
+				onBlur={saveCaret}
 				id='editable'
-			>
-				
-			</div>
-
+			></div>
+				<button onClick={test} >ADD</button>
 			<input readOnly value={tagInput} type='text' />
 		</div>
 	);
