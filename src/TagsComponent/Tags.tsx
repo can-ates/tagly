@@ -2,9 +2,15 @@ import React, { useRef, useCallback, useEffect, useReducer } from "react";
 
 import "./mystyles.scss";
 
-import { position, offset } from "caret-pos";
+import { position } from "caret-pos";
 
-interface Props {}
+interface Props {
+	readOnly?: boolean;
+}
+
+const defaultProps = {
+	readOnly: true,
+};
 
 interface IState {
 	tagStartIndex: number;
@@ -15,7 +21,6 @@ interface IState {
 }
 
 type ACTIONTYPE =
-	| { type: "setTagStartIndex"; payload: number }
 	| {
 			type: "setCaretPosition";
 			payload: {
@@ -39,11 +44,6 @@ const initialState: IState = {
 
 const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 	switch (action.type) {
-		case "setTagStartIndex":
-			return {
-				...state,
-				tagStartIndex: action.payload,
-			};
 		case "setCaretPosition":
 			return {
 				...state,
@@ -70,13 +70,26 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 	}
 };
 
-const Tagcan: React.FunctionComponent<Props> = () => {
+const Tagcan: React.FunctionComponent<Props & typeof defaultProps> = ({
+	readOnly,
+}) => {
 	const [state, dispatch] = useReducer(reducer, initialState);
-
-	const { tagStartIndex, caretPosition, tagInput, tagMode, tags } = state;
-
+	const { caretPosition, tagInput, tagMode, tags } = state;
 	const text = useRef(null);
 
+	useEffect(() => {
+		if (!readOnly) {
+			document.querySelectorAll(".test__span").forEach(item => {
+				item.addEventListener("dblclick", event => {
+					item.setAttribute("contenteditable", "true");
+				});
+
+				item.addEventListener("focusout", event => {
+					item.setAttribute("contenteditable", "false");
+				});
+			});
+		}
+	}, [caretPosition]);
 
 	const keyDownHandler = (evt: React.KeyboardEvent) => {
 		//if you are in tag mode disable new line when press enter
@@ -89,7 +102,7 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 		(html: string) => {
 			//TODO REFACTOR FOR OLDER BROWSERS
 			var sel: Selection, range: Range;
-			
+
 			if (window.getSelection) {
 				//checks if browser IE9 > and non-IE
 				sel = window.getSelection(); //returns the current position of caret
@@ -109,7 +122,7 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 						lastNode = frag.appendChild(node);
 						console.log(lastNode);
 					}
-					
+
 					range.insertNode(frag);
 
 					// Preserve the selection
@@ -121,7 +134,6 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 						sel.addRange(range);
 					}
 				}
-				
 			} else if (
 				//@ts-ignore
 				document.selection &&
@@ -136,8 +148,6 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 		[tagMode]
 	);
 
-
-	
 	function addTag(search, replace) {
 		var sel = window.getSelection();
 		if (!sel.focusNode) {
@@ -149,14 +159,14 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 		if (startIndex === -1) {
 			return;
 		}
-		
+
 		var range = document.createRange();
 		//Set the range to contain search text
 		range.setStart(sel.focusNode, startIndex - 1);
 		range.setEnd(sel.focusNode, endIndex + 1);
 		//Delete search text
 		range.deleteContents();
-		
+
 		//Insert replace text
 		injectHTMLAtCaret(replace);
 	}
@@ -166,11 +176,11 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 
 		dispatch({
 			type: "setCaretPosition",
-			payload: position(text.current)
-		})
+			payload: position(text.current),
+		});
 
-		if(tagText.match(/[^{\}]+(?=})/g)){
-			const newTag = tagText.match(/[^{\}]+(?=})/g)[0]
+		if (tagText.match(/[^{\}]+(?=})/g)) {
+			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
 			addTag(
 				newTag,
 				`<div
@@ -188,17 +198,15 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 			);
 		}
 
-
 		dispatch({
 			type: "setTagInput",
 			payload: text.current.innerText,
 		});
-
 	};
 
 	const test = () => {
-		text.current.focus()
-		position(text.current, caretPosition)
+		text.current.focus();
+		position(text.current, caretPosition);
 
 		injectHTMLAtCaret(`<div
 		contenteditable='false'
@@ -211,18 +219,18 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 				asd
 			</span>
 		</div>
-	</div>`)
-	}
+	</div>`);
+	};
 
 	const saveCaret = () => {
 		dispatch({
 			type: "setCaretPosition",
-			payload: position(text.current)
-		})
-	}
+			payload: position(text.current),
+		});
+	};
 
 	return (
-		<div >
+		<div>
 			<div
 				className='tag__input'
 				contentEditable='true'
@@ -234,7 +242,7 @@ const Tagcan: React.FunctionComponent<Props> = () => {
 				onBlur={saveCaret}
 				id='editable'
 			></div>
-				<button onClick={test} >ADD</button>
+			<button onClick={test}>ADD</button>
 			<input readOnly value={tagInput} type='text' />
 		</div>
 	);
