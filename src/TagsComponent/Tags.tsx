@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useReducer } from "react";
+import React, { useState, useRef, useCallback, useEffect, useReducer } from "react";
 
 import "./mystyles.scss";
 
@@ -6,12 +6,10 @@ import { position } from "caret-pos";
 
 interface Props {
 	readOnly?: boolean;
-	age?: number;
 }
 
 const defaultProps = {
 	readOnly: true,
-	age: 25
 };
 
 interface IState {
@@ -74,14 +72,14 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 
 const Tagcan: React.FunctionComponent<Props> = ({
 	readOnly,
-	age
+
 }) => {
 	const [state, dispatch] = useReducer(reducer, initialState);
 	const { caretPosition, tagInput, tagMode, tags } = state;
 	const text = useRef(null);
 
 	useEffect(() => {
-		console.log(age);
+		
 		if (!readOnly) {
 			document.querySelectorAll(".test__span").forEach(item => {
 				item.addEventListener("dblclick", event => {
@@ -178,6 +176,8 @@ const Tagcan: React.FunctionComponent<Props> = ({
 	const keyUpHandler = (evt: React.KeyboardEvent) => {
 		const tagText = text.current.textContent;
 
+		
+
 		dispatch({
 			type: "setCaretPosition",
 			payload: position(text.current),
@@ -190,7 +190,7 @@ const Tagcan: React.FunctionComponent<Props> = ({
 				`<div
 					contenteditable='false'
 					class="tag"
-					>
+				>
 					<div>
 						<span
 						class="test__span"
@@ -210,23 +210,35 @@ const Tagcan: React.FunctionComponent<Props> = ({
 
 	const test = () => {
 		text.current.focus();
-		position(text.current, caretPosition);
+		position(text.current, caretPosition + 1);
 
-		injectHTMLAtCaret(`<div
-		contenteditable='false'
-		class="tag"
+		
+
+		injectHTMLAtCaret(
+		`<div
+			contenteditable='false'
+			class="tag"
 		>
-		<div>
-			<span
-			class="test__span"
-			>
-				asd
-			</span>
-		</div>
-	</div>`);
+			<div>
+				<span
+				class="test__span"
+				>
+					asd
+				</span>
+			</div>
+		</div>`
+		);
+
+	
+
+	dispatch({
+		type: "setCaretPosition",
+		payload: position(text.current),
+	});
 	};
 
 	const saveCaret = () => {
+		
 		dispatch({
 			type: "setCaretPosition",
 			payload: position(text.current),
