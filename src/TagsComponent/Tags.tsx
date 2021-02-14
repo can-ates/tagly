@@ -6,10 +6,12 @@ import { position } from "caret-pos";
 
 interface Props {
 	readOnly?: boolean;
+	age?: number;
 }
 
 const defaultProps = {
 	readOnly: true,
+	age: 25
 };
 
 interface IState {
@@ -70,14 +72,16 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 	}
 };
 
-const Tagcan: React.FunctionComponent<Props & typeof defaultProps> = ({
+const Tagcan: React.FunctionComponent<Props> = ({
 	readOnly,
+	age
 }) => {
 	const [state, dispatch] = useReducer(reducer, initialState);
 	const { caretPosition, tagInput, tagMode, tags } = state;
 	const text = useRef(null);
 
 	useEffect(() => {
+		console.log(age);
 		if (!readOnly) {
 			document.querySelectorAll(".test__span").forEach(item => {
 				item.addEventListener("dblclick", event => {
@@ -248,4 +252,5 @@ const Tagcan: React.FunctionComponent<Props & typeof defaultProps> = ({
 	);
 };
 
+Tagcan.defaultProps = defaultProps
 export default Tagcan;
