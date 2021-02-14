@@ -19,9 +19,19 @@
 }
 
 .tag {
-  display: inline-block;
+  display: inline-flex;
   cursor: default;
   margin-right: 0.2em;
+    /* If you want to implement it in very old browser-versions */
+  -webkit-user-select: none; /* Chrome/Safari */ 
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+ */
+
+  /* The rule below is not implemented in browsers yet */
+  -o-user-select: none;
+
+  /* The rule below is implemented in most browsers by now */
+  user-select: none;
 }
 
 .tag__input {

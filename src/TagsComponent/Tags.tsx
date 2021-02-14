@@ -74,6 +74,7 @@ const Tagcan: React.FunctionComponent<Props> = ({
 	readOnly,
 
 }) => {
+	const [editMode, setEditMode] = useState(false)
 	const [state, dispatch] = useReducer(reducer, initialState);
 	const { caretPosition, tagInput, tagMode, tags } = state;
 	const text = useRef(null);
@@ -82,12 +83,25 @@ const Tagcan: React.FunctionComponent<Props> = ({
 		
 		if (!readOnly) {
 			document.querySelectorAll(".test__span").forEach(item => {
-				item.addEventListener("dblclick", event => {
+				item.addEventListener("dblclick", () => {
+					setEditMode(true)
 					item.setAttribute("contenteditable", "true");
+					(item as HTMLSpanElement).focus()
 				});
 
-				item.addEventListener("focusout", event => {
+				// item.addEventListener("click", event => {
+				// 	if(item.parentNode && item){
+				// 		const range = window.getSelection().getRangeAt(0)
+				// 		range.selectNode(item)
+				// 		range.deleteContents()
+				// 	}
+					
+				// });
+
+				item.addEventListener("focusout", () => {
+					(item as HTMLSpanElement).blur()
 					item.setAttribute("contenteditable", "false");
+					
 				});
 			});
 		}
@@ -177,11 +191,15 @@ const Tagcan: React.FunctionComponent<Props> = ({
 		const tagText = text.current.textContent;
 
 		
+		
 
-		dispatch({
-			type: "setCaretPosition",
-			payload: position(text.current),
-		});
+		if(!editMode){
+			dispatch({
+				type: "setCaretPosition",
+				payload: position(text.current),
+			});
+		}
+		
 
 		if (tagText.match(/[^{\}]+(?=})/g)) {
 			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
@@ -210,7 +228,7 @@ const Tagcan: React.FunctionComponent<Props> = ({
 
 	const test = () => {
 		text.current.focus();
-		position(text.current, caretPosition + 1);
+		position(text.current, caretPosition);
 
 		
 
@@ -239,10 +257,17 @@ const Tagcan: React.FunctionComponent<Props> = ({
 
 	const saveCaret = () => {
 		
-		dispatch({
-			type: "setCaretPosition",
-			payload: position(text.current),
-		});
+		
+
+		if(!editMode){
+			dispatch({
+				type: "setCaretPosition",
+				payload: position(text.current),
+			});
+		} else {
+			setEditMode(false)
+		}
+		
 	};
 
 	return (
