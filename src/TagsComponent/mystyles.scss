@@ -1,56 +1,99 @@
-@import "../variables.scss";
-@import "../typography.scss";
+.clTag {
+  $self: &;
 
-.test-component {
-  background-color: $harvey-white;
-  border: 1px solid $harvey-black;
-  padding: 16px;
-  width: 360px;
-  text-align: center;
 
-  .heading {
-    @include heading;
+	display: flex;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	border: 1px solid #9cbbbb;
+	padding: 0;
+	line-height: 1.1;
+	cursor: text;
+	outline: none;
+	position: relative;
+	box-sizing: border-box;
+	transition: 0.1s;
+
+	&__input {
+		width: 500px;
+		padding: 0.5em;
+		border-radius: 2px;
+    
+	}
+
+	&__tag {
+		display: inline-flex;
+    align-items: center;
+		cursor: default;
+    position: relative;
+    outline: none;
+    z-index: 1;
+    border-radius: 3px;
+		margin: 0.2em 0 0.2em 0.2em;
+    background-color: rgb(46, 78, 78);
+    color: beige;
+		/* If you want to implement it in very old browser-versions */
+		-webkit-user-select: none; /* Chrome/Safari */
+		-moz-user-select: none; /* Firefox */
+		-ms-user-select: none; /* IE10+ */
+		-o-user-select: none;
+		user-select: none;
+
+    > div {
+      padding: 0.3em;
+    }
+
+		&-text {
+			border-radius: 1em;
+			color: white;
+
+			&[contenteditable="true"] {
+				color: black;
+				outline: 0;
+        cursor: text;
+        user-select: text;
+			}
+		}
+
+    &__removeBtn {
+      order: 5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50px;
+      cursor: pointer;
+      font: 14px/1 Arial;
+      background: 0 0;
+      color: #fff;
+      width: 14px;
+      height: 7px;
+      margin-right: 5px;
+      margin-left: -5px;
+      overflow: hidden;
+      transition: .2s ease-out;
+
+      &::after{
+        content: "\00D7";
+        transition: .3s, color 0s;
+    }
+    }
+
+    &--editable{
+      background-color: #fff;
+
+      > div{
+        border: 2px solid aqua;
+      }
+
+      > #{$self}__tag__removeBtn{
+          pointer-events: none;
+          
+
+          &::after{
+              opacity: 0;
+              transform: translateX(100%) translateX(5px);
+          }
+      }
   }
-
-  &.test-component-secondary {
-    background-color: $harvey-black;
-    color: $harvey-white;
-  }
-}
-
-.tag {
-  display: inline-flex;
-  cursor: default;
-  margin-right: 0.2em;
-    /* If you want to implement it in very old browser-versions */
-  -webkit-user-select: none; /* Chrome/Safari */ 
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* IE10+ */
-
-  /* The rule below is not implemented in browsers yet */
-  -o-user-select: none;
-
-  /* The rule below is implemented in most browsers by now */
-  user-select: none;
-}
-
-.tag__input {
-  width: 500px;
-  padding: 0.5em;
-  border: 1px solid purple;
-  border-radius: 2px;
-}
-
-.test__span {
-  background-color: red;
-  padding: 0.2em 0.4em;
-  border-radius: 1em;
-  color: white;
-
-  &[contenteditable='true'] {
-    background-color: white;
-    color: black;
-    border: 2px solid red;
-    outline: 0;
-  }
+	}
 }

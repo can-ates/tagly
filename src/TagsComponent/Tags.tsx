@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useEffect, useReducer } from "react";
+import React, {
+	useState,
+	useRef,
+	useCallback,
+	useEffect,
+	useReducer,
+} from "react";
 
 import "./mystyles.scss";
 
@@ -70,42 +76,11 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 	}
 };
 
-const Tagcan: React.FunctionComponent<Props> = ({
-	readOnly,
-
-}) => {
-	const [editMode, setEditMode] = useState(false)
+const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
+	const [editMode, setEditMode] = useState(false);
 	const [state, dispatch] = useReducer(reducer, initialState);
 	const { caretPosition, tagInput, tagMode, tags } = state;
 	const text = useRef(null);
-
-	useEffect(() => {
-		
-		if (!readOnly) {
-			document.querySelectorAll(".test__span").forEach(item => {
-				item.addEventListener("dblclick", () => {
-					setEditMode(true)
-					item.setAttribute("contenteditable", "true");
-					(item as HTMLSpanElement).focus()
-				});
-
-				// item.addEventListener("click", event => {
-				// 	if(item.parentNode && item){
-				// 		const range = window.getSelection().getRangeAt(0)
-				// 		range.selectNode(item)
-				// 		range.deleteContents()
-				// 	}
-					
-				// });
-
-				item.addEventListener("focusout", () => {
-					(item as HTMLSpanElement).blur()
-					item.setAttribute("contenteditable", "false");
-					
-				});
-			});
-		}
-	}, [caretPosition]);
 
 	const keyDownHandler = (evt: React.KeyboardEvent) => {
 		//if you are in tag mode disable new line when press enter
@@ -116,29 +91,53 @@ const Tagcan: React.FunctionComponent<Props> = ({
 
 	const injectHTMLAtCaret = useCallback(
 		(html: string) => {
-			//TODO REFACTOR FOR OLDER BROWSERS
-			var sel: Selection, range: Range;
+			let sel: Selection, range: Range;
 
 			if (window.getSelection) {
 				//checks if browser IE9 > and non-IE
 				sel = window.getSelection(); //returns the current position of caret
 				if (sel.getRangeAt && sel.rangeCount) {
 					range = sel.getRangeAt(0);
-					console.log(range);
-					range.deleteContents();
-					console.log(range);
 
-					var el = document.createElement("div") as HTMLDivElement;
+					range.deleteContents();
+
+					let el = document.createElement("div") as HTMLDivElement;
 					el.innerHTML = html;
-					var frag = document.createDocumentFragment(), //we will append tags to this newly created empty object
+
+					let tag = el.firstElementChild;
+
+					if (!readOnly) {
+						let tagText = tag.children[1].firstElementChild;
+						tag.addEventListener("dblclick", () => {
+							tag.classList.add("clTag__tag--editable");
+							tagText.setAttribute("contenteditable", "true");
+							(tagText as HTMLSpanElement).focus();
+							setEditMode(true);
+						});
+
+						tagText.addEventListener("focusout", () => {
+							tag.classList.remove("clTag__tag--editable");
+							(tagText as HTMLSpanElement).blur();
+							tagText.setAttribute("contenteditable", "false");
+						});
+					}
+
+					let removeBtn = tag.children[0];
+					removeBtn.addEventListener("click", () => {
+						if (tag.parentNode && tag) {
+							const range = window.getSelection().getRangeAt(0);
+							range.selectNode(tag);
+							range.deleteContents();
+						}
+					});
+
+					let frag = document.createDocumentFragment(), //we will append tags to this newly created empty object
 						node: ChildNode,
 						lastNode: Node;
 					while ((node = el.firstChild)) {
-						console.log(el.firstChild);
 						lastNode = frag.appendChild(node);
-						console.log(lastNode);
 					}
-
+					console.log(node);
 					range.insertNode(frag);
 
 					// Preserve the selection
@@ -164,7 +163,7 @@ const Tagcan: React.FunctionComponent<Props> = ({
 		[tagMode]
 	);
 
-	function addTag(search, replace) {
+	function addTag(search: string, replace: string) {
 		var sel = window.getSelection();
 		if (!sel.focusNode) {
 			return;
@@ -190,16 +189,12 @@ const Tagcan: React.FunctionComponent<Props> = ({
 	const keyUpHandler = (evt: React.KeyboardEvent) => {
 		const tagText = text.current.textContent;
 
-		
-		
-
-		if(!editMode){
+		if (!editMode) {
 			dispatch({
 				type: "setCaretPosition",
 				payload: position(text.current),
 			});
 		}
-		
 
 		if (tagText.match(/[^{\}]+(?=})/g)) {
 			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
@@ -207,11 +202,16 @@ const Tagcan: React.FunctionComponent<Props> = ({
 				newTag,
 				`<div
 					contenteditable='false'
-					class="tag"
+					class="clTag__tag"
 				>
+					<span
+						class="clTag__tag__removeBtn"
+					>
+					
+					</span>
 					<div>
 						<span
-						class="test__span"
+							class="clTag__tag-text"
 						>
 							${newTag}
 						</span>
@@ -228,66 +228,73 @@ const Tagcan: React.FunctionComponent<Props> = ({
 
 	const test = () => {
 		text.current.focus();
-		position(text.current, caretPosition);
 
-		
+		let sel = window.getSelection();
+		if ((sel as any).focusNode.nextElementSibling) {
+			position(text.current, caretPosition);
+		} else {
+			position(text.current, caretPosition + 1);
+		}
 
 		injectHTMLAtCaret(
-		`<div
-			contenteditable='false'
-			class="tag"
-		>
-			<div>
+			`<div
+				contenteditable='false'
+				class="clTag__tag"
+			>
 				<span
-				class="test__span"
+					class="clTag__tag__removeBtn"
 				>
-					asd
+					
 				</span>
-			</div>
+				<div>
+					<span
+						class="clTag__tag-text"
+					>
+						asd
+					</span>
+				</div>
 		</div>`
 		);
 
-	
-
-	dispatch({
-		type: "setCaretPosition",
-		payload: position(text.current),
-	});
+		dispatch({
+			type: "setCaretPosition",
+			payload: position(text.current),
+		});
 	};
 
 	const saveCaret = () => {
-		
-		
-
-		if(!editMode){
+		if (!editMode) {
 			dispatch({
 				type: "setCaretPosition",
 				payload: position(text.current),
 			});
 		} else {
-			setEditMode(false)
+			setEditMode(false);
 		}
-		
 	};
 
 	return (
-		<div>
-			<div
-				className='tag__input'
-				contentEditable='true'
-				ref={text}
-				onKeyUp={e => {
-					keyUpHandler(e);
-				}}
-				onKeyDown={keyDownHandler}
-				onBlur={saveCaret}
-				id='editable'
-			></div>
-			<button onClick={test}>ADD</button>
-			<input readOnly value={tagInput} type='text' />
-		</div>
+		<React.Fragment>
+			<div className='clTag'>
+				<div
+					className='clTag__input'
+					contentEditable='true'
+					ref={text}
+					onKeyUp={e => {
+						keyUpHandler(e);
+					}}
+					onKeyDown={keyDownHandler}
+					onBlur={saveCaret}
+					id='editable'
+				></div>
+			</div>
+			<div>
+				<button onClick={test}>ADD</button>
+				<textarea readOnly value={tagInput} />
+			</div>
+		</React.Fragment>
 	);
 };
 
-Tagcan.defaultProps = defaultProps
+Tagcan.defaultProps = defaultProps;
 export default Tagcan;
