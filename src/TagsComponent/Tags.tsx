@@ -9,6 +9,7 @@ import React, {
 import "./mystyles.scss";
 
 import { position } from "caret-pos";
+import rangy from "rangy";
 
 interface Props {
 	readOnly?: boolean;
@@ -19,11 +20,8 @@ const defaultProps = {
 };
 
 interface IState {
-	tagStartIndex: number;
 	tagInput: string;
 	caretPosition: number;
-	tagMode: boolean;
-	tags: HTMLElement[];
 }
 
 type ACTIONTYPE =
@@ -38,14 +36,10 @@ type ACTIONTYPE =
 	  }
 	| { type: "setTagInput"; payload: string }
 	| { type: "setTagMode"; payload: boolean }
-	| { type: "addTag"; payload: any }; //TODO
 
 const initialState: IState = {
-	tagStartIndex: 0,
 	tagInput: "",
 	caretPosition: 0,
-	tagMode: false,
-	tags: [],
 };
 
 const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
@@ -65,11 +59,7 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 				...state,
 				tagMode: action.payload,
 			};
-		case "addTag":
-			return {
-				...state,
-				tags: [...state.tags, action.payload],
-			};
+		
 
 		default:
 			return state;
@@ -77,52 +67,119 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 };
 
 const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
-	const [editMode, setEditMode] = useState(false);
 	const [state, dispatch] = useReducer(reducer, initialState);
-	const { caretPosition, tagInput, tagMode, tags } = state;
+	const { caretPosition, tagInput } = state;
 	const text = useRef(null);
 
-	const keyDownHandler = (evt: React.KeyboardEvent) => {
-		//if you are in tag mode disable new line when press enter
-		if (evt.keyCode == 13 && tagMode) {
-			evt.preventDefault();
-		}
-	};
+	useEffect(() => {
+		// 	const contenteditable = document.getElementById("editable");
+		// 	const observer = new MutationObserver(() => {
+		// 		const tagText = text.current.textContent;
+		// 		console.log('xd');
+		// 		if (tagText.match(/[^{\}]+(?=})/g)) {
+		// 			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
+		// 			addTag(
+		// 				newTag,
+		// 				`<div
+		// 					contenteditable='false'
+		// 					class="clTag__tag"
+		// 				>
+		// 					<span
+		// 						class="clTag__tag__removeBtn"
+		// 					>
+		// 					</span>
+		// 					<div>
+		// 						<span
+		// 							class="clTag__tag-text"
+		// 						>
+		// 							${newTag}
+		// 						</span>
+		// 					</div>
+		// 				</div>`,
+		// 				caretPosition
+		// 			);
+		// 		}
+		// 	});
+		// 	observer.observe(contenteditable, {
+		// 		subtree: true,
+		// 		characterData: true
+		// 	});
+	}, []);
 
-	const injectHTMLAtCaret = useCallback(
-		(html: string) => {
-			let sel: Selection, range: Range;
+	useEffect(() => {
+		// 	if (external) {
+		// 		console.log(caretPosition);
+		// 		position(text.current, caretPosition - 1);
+		// 		addTag(
+		// 			label,
+		// 			`<div
+		// 	contenteditable='false'
+		// 	class="clTag__tag"
+		// >
+		// 	<span
+		// 		class="clTag__tag__removeBtn"
+		// 	>
+		// 	</span>
+		// 	<div>
+		// 		<span
+		// 			class="clTag__tag-text"
+		// 		>
+		// 			${label}
+		// 		</span>
+		// 	</div>
+		// </div>`,
+		// 		);
+		// 		setLabel("");
+		// 		setExternal(false)
+		// 		position(text.current, caretPosition + 2);
+		// 		dispatch({
+		// 			type: "setCaretPosition",
+		// 			payload: position(text.current)
+		// 		})
+		// 	}
+	}, [caretPosition]);
 
-			if (window.getSelection) {
-				//checks if browser IE9 > and non-IE
-				sel = window.getSelection(); //returns the current position of caret
-				if (sel.getRangeAt && sel.rangeCount) {
-					range = sel.getRangeAt(0);
+	// const keyDownHandler = (evt: React.KeyboardEvent) => {
+	// 	//if you are in tag mode disable new line when press enter
+	// 	if (evt.keyCode == 13 && tagMode) {
+	// 		evt.preventDefault();
+	// 	}
+	// };
 
-					range.deleteContents();
+	const injectHTMLAtCaret = (html: string) => {
+		let sel: Selection, range: Range;
 
-					let el = document.createElement("div") as HTMLDivElement;
-					el.innerHTML = html;
+		if (window.getSelection) {
+			//checks if browser IE9 > and non-IE
+			sel = window.getSelection(); //returns the current position of caret
+			if (sel.getRangeAt && sel.rangeCount) {
+				range = sel.getRangeAt(0);
 
-					let tag = el.firstElementChild;
+				range.deleteContents();
 
-					if (!readOnly) {
-						let tagText = tag.children[1].firstElementChild;
-						tag.addEventListener("dblclick", () => {
-							tag.classList.add("clTag__tag--editable");
-							tagText.setAttribute("contenteditable", "true");
-							(tagText as HTMLSpanElement).focus();
-							setEditMode(true);
-						});
+				let el = document.createElement("div") as HTMLDivElement;
+				el.innerHTML = html;
 
-						tagText.addEventListener("focusout", () => {
-							tag.classList.remove("clTag__tag--editable");
-							(tagText as HTMLSpanElement).blur();
-							tagText.setAttribute("contenteditable", "false");
-						});
-					}
+				let tag = el.firstElementChild;
 
-					let removeBtn = tag.children[0];
+				if (!readOnly && tag) {
+					let tagText = tag.children[1].firstElementChild;
+					tag.addEventListener("dblclick", () => {
+						tag.classList.add("clTag__tag--editable");
+						tagText.setAttribute("contenteditable", "true");
+						(tagText as HTMLSpanElement).focus();
+					});
+
+					tagText.addEventListener("focusout", () => {
+						tag.classList.remove("clTag__tag--editable");
+						(tagText as HTMLSpanElement).blur();
+						tagText.setAttribute("contenteditable", "false");
+					});
+				}
+
+				let removeBtn = tag?.children[0];
+
+				if (removeBtn) {
 					removeBtn.addEventListener("click", () => {
 						if (tag.parentNode && tag) {
 							const range = window.getSelection().getRangeAt(0);
@@ -130,52 +187,65 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 							range.deleteContents();
 						}
 					});
-
-					let frag = document.createDocumentFragment(), //we will append tags to this newly created empty object
-						node: ChildNode,
-						lastNode: Node;
-					while ((node = el.firstChild)) {
-						lastNode = frag.appendChild(node);
-					}
-					console.log(node);
-					range.insertNode(frag);
-
-					// Preserve the selection
-					if (lastNode) {
-						range = range.cloneRange();
-						range.setStartAfter(lastNode);
-						range.collapse(true);
-						sel.removeAllRanges();
-						sel.addRange(range);
-					}
 				}
-			} else if (
-				//@ts-ignore
-				document.selection &&
-				//@ts-ignore
-				document.selection.type != "Control"
-			) {
-				//IE < 9
-				//@ts-ignore
-				document.selection.createRange().pasteHTML(html);
+
+				let frag = document.createDocumentFragment(), //we will append tags to this newly created empty object
+					node: ChildNode,
+					lastNode: Node;
+				while ((node = el.firstChild)) {
+					lastNode = frag.appendChild(node);
+				}
+
+				if (caretPosition != 0) {
+					const cl = caretPosition - 1;
+					position(text.current, cl);
+				}
+
+				if (
+					(sel.focusNode.parentNode as any).className === "clTag__tag"
+				) {
+					range.setStartAfter(sel.focusNode.parentNode);
+				}
+
+				range.collapse(false);
+				range.insertNode(frag);
+
+				// Preserve the selection
+				if (lastNode) {
+					range = range.cloneRange();
+					range.setStartAfter(lastNode);
+					range.collapse(false);
+					sel.removeAllRanges();
+					sel.addRange(range);
+				}
 			}
-		},
-		[tagMode]
-	);
+		} else if (
+			//@ts-ignore
+			document.selection &&
+			//@ts-ignore
+			document.selection.type != "Control"
+		) {
+			//IE < 9
+			//@ts-ignore
+			document.selection.createRange().pasteHTML(html);
+		}
+	};
 
 	function addTag(search: string, replace: string) {
-		var sel = window.getSelection();
+		let sel = window.getSelection();
+
 		if (!sel.focusNode) {
 			return;
 		}
 
-		var startIndex = sel.focusNode.nodeValue.indexOf(search);
-		var endIndex = startIndex + search.length;
+		let startIndex = sel.focusNode.nodeValue.indexOf(search);
+		let endIndex = startIndex + search.length;
 		if (startIndex === -1) {
 			return;
 		}
 
-		var range = document.createRange();
+		let range = document.createRange();
+
 		//Set the range to contain search text
 		range.setStart(sel.focusNode, startIndex - 1);
 		range.setEnd(sel.focusNode, endIndex + 1);
@@ -188,13 +258,11 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 
 	const keyUpHandler = (evt: React.KeyboardEvent) => {
 		const tagText = text.current.textContent;
-
-		if (!editMode) {
-			dispatch({
-				type: "setCaretPosition",
-				payload: position(text.current),
-			});
-		}
+		console.log(window.getSelection());
+		dispatch({
+			type: "setCaretPosition",
+			payload: position(text.current),
+		});
 
 		if (tagText.match(/[^{\}]+(?=})/g)) {
 			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
@@ -207,7 +275,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 					<span
 						class="clTag__tag__removeBtn"
 					>
-					
+
 					</span>
 					<div>
 						<span
@@ -226,35 +294,59 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 		});
 	};
 
-	const test = () => {
-		text.current.focus();
-
-		let sel = window.getSelection();
-		if ((sel as any).focusNode.nextElementSibling) {
-			position(text.current, caretPosition);
-		} else {
-			position(text.current, caretPosition + 1);
+	//TODO WILL BE DELETED
+	function generateText(length) {
+		var result = "";
+		var characters =
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		var charactersLength = characters.length;
+		for (var i = 0; i < length; i++) {
+			result += characters.charAt(
+				Math.floor(Math.random() * charactersLength)
+			);
 		}
+		return result;
+	}
 
-		injectHTMLAtCaret(
+	const externalTag = () => {
+		text.current.focus();
+		position(text.current, caretPosition);
+		const randomString = generateText(7);
+
+		console.log(rangy);
+
+		injectHTMLAtCaret(`{${randomString}}`);
+
+		let endOfString = position(text.current).pos;
+		endOfString--;
+		position(text.current, endOfString);
+
+		addTag(
+			randomString,
 			`<div
-				contenteditable='false'
-				class="clTag__tag"
-			>
-				<span
-					class="clTag__tag__removeBtn"
+					contenteditable='false'
+					class="clTag__tag"
+					tabindex='-1'
 				>
-					
-				</span>
-				<div>
 					<span
-						class="clTag__tag-text"
+						class="clTag__tag__removeBtn"
 					>
-						asd
+	
 					</span>
-				</div>
-		</div>`
+					<div>
+						<span
+							class="clTag__tag-text"
+						>
+							${randomString}
+						</span>
+					</div>
+				</div>`
 		);
+
+		// let last = position(text.current);
+		// last.pos++;
+
+		// position(text.current, last.pos);
 
 		dispatch({
 			type: "setCaretPosition",
@@ -262,20 +354,27 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 		});
 	};
 
+	// const test = () => {
+	// 	text.current.focus();
+	// 	let sel = window.getSelection();
+	// 	let range = sel.getRangeAt(0);
+
+	// 	const cl = caretPosition - 1;
+	// 	position(text.current, cl);
+	// 	console.log(sel.focusNode);
+	// };
+
 	const saveCaret = () => {
-		if (!editMode) {
-			dispatch({
-				type: "setCaretPosition",
-				payload: position(text.current),
-			});
-		} else {
-			setEditMode(false);
-		}
+		dispatch({
+			type: "setCaretPosition",
+			payload: position(text.current),
+		});
+		
 	};
 
 	return (
 		<React.Fragment>
-			<div className='clTag'>
+			<div className='clTag' tabIndex={-1}>
 				<div
 					className='clTag__input'
 					contentEditable='true'
@@ -283,13 +382,14 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 					onKeyUp={e => {
 						keyUpHandler(e);
 					}}
-					onKeyDown={keyDownHandler}
+					// onKeyDown={keyDownHandler}
 					onBlur={saveCaret}
+					// onClick={test}
 					id='editable'
 				></div>
 			</div>
 			<div>
-				<button onClick={test}>ADD</button>
+				<button onClick={externalTag}>ADD</button>
 				<textarea readOnly value={tagInput} />
 			</div>
 		</React.Fragment>

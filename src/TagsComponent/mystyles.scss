@@ -18,6 +18,10 @@
 		width: 500px;
 		padding: 0.5em;
 		border-radius: 2px;
+    display: inline-block;
+    flex-grow: 1;
+    position: relative;
+    box-sizing: inherit;
     
 	}
 
@@ -27,17 +31,28 @@
 		cursor: default;
     position: relative;
     outline: none;
-    z-index: 1;
+    z-index: 2;
     border-radius: 3px;
 		margin: 0.2em 0 0.2em 0.2em;
     background-color: rgb(46, 78, 78);
     color: beige;
 		/* If you want to implement it in very old browser-versions */
-		-webkit-user-select: none; /* Chrome/Safari */
-		-moz-user-select: none; /* Firefox */
-		-ms-user-select: none; /* IE10+ */
-		-o-user-select: none;
-		user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    & *:after {
+      content: '\200B';
+      -webkit-user-select: auto; /* Chrome/Safari */
+      -moz-user-select: auto; /* Firefox */
+      -ms-user-select: auto; /* IE10+ */
+      -o-user-select: auto;
+      user-select: auto;
+  
+    }
 
     > div {
       padding: 0.3em;
