@@ -9,14 +9,18 @@ import React, {
 import "./mystyles.scss";
 
 import { position } from "caret-pos";
-import rangy from "rangy";
 
 interface Props {
 	readOnly?: boolean;
+	allowedTags?: {
+		label: string;
+		value: string;
+	}[];
 }
 
 const defaultProps = {
 	readOnly: true,
+	allowedTags: [],
 };
 
 interface IState {
@@ -35,7 +39,7 @@ type ACTIONTYPE =
 			};
 	  }
 	| { type: "setTagInput"; payload: string }
-	| { type: "setTagMode"; payload: boolean }
+	| { type: "setTagMode"; payload: boolean };
 
 const initialState: IState = {
 	tagInput: "",
@@ -59,85 +63,17 @@ const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
 				...state,
 				tagMode: action.payload,
 			};
-		
 
 		default:
 			return state;
 	}
 };
 
-const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
+const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
+	const [editMode, setEditMode] = useState(false);
 	const [state, dispatch] = useReducer(reducer, initialState);
 	const { caretPosition, tagInput } = state;
 	const text = useRef(null);
-
-	useEffect(() => {
-		// 	const contenteditable = document.getElementById("editable");
-		// 	const observer = new MutationObserver(() => {
-		// 		const tagText = text.current.textContent;
-		// 		console.log('xd');
-		// 		if (tagText.match(/[^{\}]+(?=})/g)) {
-		// 			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
-		// 			addTag(
-		// 				newTag,
-		// 				`<div
-		// 					contenteditable='false'
-		// 					class="clTag__tag"
-		// 				>
-		// 					<span
-		// 						class="clTag__tag__removeBtn"
-		// 					>
-		// 					</span>
-		// 					<div>
-		// 						<span
-		// 							class="clTag__tag-text"
-		// 						>
-		// 							${newTag}
-		// 						</span>
-		// 					</div>
-		// 				</div>`,
-		// 				caretPosition
-		// 			);
-		// 		}
-		// 	});
-		// 	observer.observe(contenteditable, {
-		// 		subtree: true,
-		// 		characterData: true
-		// 	});
-	}, []);
-
-	useEffect(() => {
-		// 	if (external) {
-		// 		console.log(caretPosition);
-		// 		position(text.current, caretPosition - 1);
-		// 		addTag(
-		// 			label,
-		// 			`<div
-		// 	contenteditable='false'
-		// 	class="clTag__tag"
-		// >
-		// 	<span
-		// 		class="clTag__tag__removeBtn"
-		// 	>
-		// 	</span>
-		// 	<div>
-		// 		<span
-		// 			class="clTag__tag-text"
-		// 		>
-		// 			${label}
-		// 		</span>
-		// 	</div>
-		// </div>`,
-		// 		);
-		// 		setLabel("");
-		// 		setExternal(false)
-		// 		position(text.current, caretPosition + 2);
-		// 		dispatch({
-		// 			type: "setCaretPosition",
-		// 			payload: position(text.current)
-		// 		})
-		// 	}
-	}, [caretPosition]);
 
 	// const keyDownHandler = (evt: React.KeyboardEvent) => {
 	// 	//if you are in tag mode disable new line when press enter
@@ -168,6 +104,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 						tag.classList.add("clTag__tag--editable");
 						tagText.setAttribute("contenteditable", "true");
 						(tagText as HTMLSpanElement).focus();
+						setEditMode(true);
 					});
 
 					tagText.addEventListener("focusout", () => {
@@ -264,28 +201,64 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 			payload: position(text.current),
 		});
 
-		if (tagText.match(/[^{\}]+(?=})/g)) {
-			const newTag = tagText.match(/[^{\}]+(?=})/g)[0];
-			addTag(
-				newTag,
-				`<div
-					contenteditable='false'
-					class="clTag__tag"
-				>
-					<span
-						class="clTag__tag__removeBtn"
-					>
+		console.log(tagText.match(/\{([^}]+)\}/g));
+		// /[^{\}]+(?=})/g
 
-					</span>
-					<div>
-						<span
-							class="clTag__tag-text"
-						>
-							${newTag}
-						</span>
-					</div>
-				</div>`
-			);
+		//TODO Replace with better regex :P
+		if (tagText.match(/\{([^}]+)\}/g)) {
+			const newTag = tagText.match(/\{([^}]+)\}/g);
+
+			if (allowedTags.length > 0) {
+				newTag.forEach((newt: string) => {
+					allowedTags.forEach(tag => {
+						if (tag.label === newt) {
+							addTag(
+								newt.slice(1,-1),
+								`<div
+									contenteditable='false'
+									class="clTag__tag"
+								>
+									<span
+										class="clTag__tag__removeBtn"
+									>
+				
+									</span>
+									<div>
+										<span
+											class="clTag__tag-text"
+										>
+											${newt.slice(1,-1)}
+										</span>
+									</div>
+								</div>`
+							);
+						}
+					});
+				});
+			} else {
+				newTag.forEach((newt: string) => {
+					addTag(
+						newt.slice(1,-1),
+						`<div
+									contenteditable='false'
+									class="clTag__tag"
+								>
+									<span
+										class="clTag__tag__removeBtn"
+									>
+				
+									</span>
+									<div>
+										<span
+											class="clTag__tag-text"
+										>
+											${newt.slice(1, -1)}
+										</span>
+									</div>
+								</div>`
+					);
+				});
+			}
 		}
 
 		dispatch({
@@ -313,8 +286,6 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 		position(text.current, caretPosition);
 		const randomString = generateText(7);
 
-		console.log(rangy);
-
 		injectHTMLAtCaret(`{${randomString}}`);
 
 		let endOfString = position(text.current).pos;
@@ -323,7 +294,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 
 		addTag(
 			randomString,
-				`<div
+			`<div
 					contenteditable='false'
 					class="clTag__tag"
 					tabindex='-1'
@@ -365,11 +336,14 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 	// };
 
 	const saveCaret = () => {
-		dispatch({
-			type: "setCaretPosition",
-			payload: position(text.current),
-		});
-		
+		if (!editMode) {
+			dispatch({
+				type: "setCaretPosition",
+				payload: position(text.current),
+			});
+		} else {
+			setEditMode(false);
+		}
 	};
 
 	return (
