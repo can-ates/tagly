@@ -1,12 +1,12 @@
 {
-  "name": "tag-can",
+  "name": "react-tagly",
   "version": "1.0.0",
   "main": "build/index.js",
   "module": "build/index.esm.js",
   "files": [
     "build"
   ],
-  "description": "tag-input",
+  "description": "react tag input",
   "scripts": {
     "build": "rollup -c -w",
     "storybook": "start-storybook -p 6006",

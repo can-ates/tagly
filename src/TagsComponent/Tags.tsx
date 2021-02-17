@@ -323,7 +323,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly }) => {
 
 		addTag(
 			randomString,
-			`<div
+				`<div
 					contenteditable='false'
 					class="clTag__tag"
 					tabindex='-1'
