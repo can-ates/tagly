@@ -1,9 +1,6 @@
 import React, {
 	useState,
 	useRef,
-	useCallback,
-	useEffect,
-	useReducer,
 } from "react";
 
 import "./mystyles.scss";
@@ -16,71 +13,24 @@ interface Props {
 		label: string;
 		value: string;
 	}[];
+	mixed?: boolean;
+
 }
 
 const defaultProps = {
 	readOnly: true,
 	allowedTags: [],
+	mixed: true,
+	
 };
 
-interface IState {
-	tagInput: string;
-	caretPosition: number;
-}
-
-type ACTIONTYPE =
-	| {
-			type: "setCaretPosition";
-			payload: {
-				height: number;
-				left: number;
-				top: number;
-				pos: number;
-			};
-	  }
-	| { type: "setTagInput"; payload: string }
-	| { type: "setTagMode"; payload: boolean };
-
-const initialState: IState = {
-	tagInput: "",
-	caretPosition: 0,
-};
-
-const reducer = (state: typeof initialState, action: ACTIONTYPE) => {
-	switch (action.type) {
-		case "setCaretPosition":
-			return {
-				...state,
-				caretPosition: action.payload.pos,
-			};
-		case "setTagInput":
-			return {
-				...state,
-				tagInput: action.payload,
-			};
-		case "setTagMode":
-			return {
-				...state,
-				tagMode: action.payload,
-			};
-
-		default:
-			return state;
-	}
-};
-
-const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
+const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags}) => {
 	const [editMode, setEditMode] = useState(false);
-	const [state, dispatch] = useReducer(reducer, initialState);
-	const { caretPosition, tagInput } = state;
+	const [caretPosition, setCaretPosition] = useState(0)
+	const [tagInput, setTagInput] = useState('')
+	
 	const text = useRef(null);
 
-	// const keyDownHandler = (evt: React.KeyboardEvent) => {
-	// 	//if you are in tag mode disable new line when press enter
-	// 	if (evt.keyCode == 13 && tagMode) {
-	// 		evt.preventDefault();
-	// 	}
-	// };
 
 	const injectHTMLAtCaret = (html: string) => {
 		let sel: Selection, range: Range;
@@ -98,6 +48,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 
 				let tag = el.firstElementChild;
 
+				
 				if (!readOnly && tag) {
 					let tagText = tag.children[1].firstElementChild;
 					tag.addEventListener("dblclick", () => {
@@ -133,12 +84,19 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 					lastNode = frag.appendChild(node);
 				}
 
-				if (caretPosition != 0) {
+				
+				//Before the insertion, we first must check previos position
+				//of the caret. 
+				if (caretPosition != 0) { //Omitting first position
 					const cl = caretPosition - 1;
-					position(text.current, cl);
+					position(text.current, cl); //this returns previos position
 				}
 
+				//If there is a tag element, we insert newly created
+				//tag after this tag.
+				//!If we don't, it adds the tag inside other tag
 				if (
+					//TODO use better comparison
 					(sel.focusNode.parentNode as any).className === "clTag__tag"
 				) {
 					range.setStartAfter(sel.focusNode.parentNode);
@@ -175,6 +133,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 			return;
 		}
 
+		//finds the pattern
 		let startIndex = sel.focusNode.nodeValue.indexOf(search);
 		let endIndex = startIndex + search.length;
 		if (startIndex === -1) {
@@ -195,25 +154,24 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 
 	const keyUpHandler = (evt: React.KeyboardEvent) => {
 		const tagText = text.current.textContent;
-		console.log(window.getSelection());
-		dispatch({
-			type: "setCaretPosition",
-			payload: position(text.current),
-		});
+		
+		setCaretPosition(position(text.current).pos)
 
-		console.log(tagText.match(/\{([^}]+)\}/g));
+		// console.log(tagText.match(/\{([^}]+)\}/g));
 		// /[^{\}]+(?=})/g
 
 		//TODO Replace with better regex :P
 		if (tagText.match(/\{([^}]+)\}/g)) {
-			const newTag = tagText.match(/\{([^}]+)\}/g);
+			const newTag = tagText.match(/\{([^}]+)\}/g)[0]
 
+			//TODO REPLACE WITH RECURSIVE CALL FOR MULTIPLE INSERTION
 			if (allowedTags.length > 0) {
-				newTag.forEach((newt: string) => {
+				
+				console.log(newTag);
 					allowedTags.forEach(tag => {
-						if (tag.label === newt) {
+						if (tag.label === newTag.slice(1,-1)) {
 							addTag(
-								newt.slice(1,-1),
+								newTag.slice(1,-1),
 								`<div
 									contenteditable='false'
 									class="clTag__tag"
@@ -227,45 +185,46 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 										<span
 											class="clTag__tag-text"
 										>
-											${newt.slice(1,-1)}
+											${newTag.slice(1,-1)}
 										</span>
 									</div>
 								</div>`
 							);
 						}
 					});
-				});
-			} else {
-				newTag.forEach((newt: string) => {
-					addTag(
-						newt.slice(1,-1),
-						`<div
-									contenteditable='false'
-									class="clTag__tag"
-								>
-									<span
-										class="clTag__tag__removeBtn"
-									>
 				
-									</span>
-									<div>
-										<span
-											class="clTag__tag-text"
-										>
-											${newt.slice(1, -1)}
-										</span>
-									</div>
-								</div>`
+			} else {
+				
+					addTag(
+						newTag.slice(1,-1),
+						`<div
+							contenteditable='false'
+							class="clTag__tag"
+						>
+							<span
+								class="clTag__tag__removeBtn"
+							>
+				
+							</span>
+							<div>
+								<span
+									class="clTag__tag-text"
+								>
+									${newTag.slice(1, -1)}
+								</span>
+							</div>
+						</div>`
 					);
-				});
+				
 			}
 		}
 
-		dispatch({
-			type: "setTagInput",
-			payload: text.current.innerText,
-		});
+		setTagInput(text.current.innerText)
 	};
+
+	const pasteHandler = () => {
+		console.log('Paste');
+	}
 
 	//TODO WILL BE DELETED
 	function generateText(length) {
@@ -314,33 +273,13 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 				</div>`
 		);
 
-		// let last = position(text.current);
-		// last.pos++;
-
-		// position(text.current, last.pos);
-
-		dispatch({
-			type: "setCaretPosition",
-			payload: position(text.current),
-		});
+		setCaretPosition(position(text.current).pos)
 	};
 
-	// const test = () => {
-	// 	text.current.focus();
-	// 	let sel = window.getSelection();
-	// 	let range = sel.getRangeAt(0);
-
-	// 	const cl = caretPosition - 1;
-	// 	position(text.current, cl);
-	// 	console.log(sel.focusNode);
-	// };
 
 	const saveCaret = () => {
 		if (!editMode) {
-			dispatch({
-				type: "setCaretPosition",
-				payload: position(text.current),
-			});
+			setCaretPosition(position(text.current).pos)
 		} else {
 			setEditMode(false);
 		}
@@ -348,7 +287,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 
 	return (
 		<React.Fragment>
-			<div className='clTag' tabIndex={-1}>
+			<div data-testid="xd" className='clTag' tabIndex={-1}>
 				<div
 					className='clTag__input'
 					contentEditable='true'
@@ -358,7 +297,7 @@ const Tagcan: React.FunctionComponent<Props> = ({ readOnly, allowedTags }) => {
 					}}
 					// onKeyDown={keyDownHandler}
 					onBlur={saveCaret}
-					// onClick={test}
+					onPaste={pasteHandler}
 					id='editable'
 				></div>
 			</div>
