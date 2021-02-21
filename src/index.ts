@@ -1,3 +1,3 @@
-import TagCan from "./TagsComponent";
+import TagCan from "./react.cooltag";
 
 export { TagCan };
