@@ -5,22 +5,23 @@ import { position } from "caret-pos";
 interface Tag {
 	label: string;
 	value: string;
-} 
+}
 
 interface IOptions {
 	containerClassName?: string;
 	readOnly?: boolean;
 	allowedTags?: Tag[];
+	duplicate?: boolean;
 	changeHandler?: (inputValue: string) => void;
 }
-
-
 
 export default class MixedTagInput {
 	editableMainDiv: HTMLDivElement;
 	options: IOptions;
 	caretPosition: number = 0;
 	editMode: boolean = false;
+	inputValue: string;
+	tags: string[] = []
 
 	constructor(options: IOptions) {
 		this.options = options;
@@ -54,18 +55,21 @@ export default class MixedTagInput {
 	};
 
 	handleChange = () => {
-		const mixedTags = this.editableMainDiv.childNodes
-		
-		let parsedNodes = []
-		
+		const mixedTags = this.editableMainDiv.childNodes;
+
+		let parsedNodes = [];
+
 		mixedTags.forEach((el: Node) => {
-			if(el.firstChild){
-				parsedNodes.push((el as HTMLDivElement).attributes['name'].nodeValue)
+			if (el.firstChild) {
+				parsedNodes.push(
+					(el as HTMLDivElement).attributes["name"].nodeValue
+				);
 			} else {
-				parsedNodes.push((el as Text).data)
+				parsedNodes.push((el as Text).data);
 			}
-		})
-		this.options.changeHandler(parsedNodes.join(''))
+		});
+		this.inputValue = parsedNodes.join("");
+		this.options.changeHandler(parsedNodes.join(""));
 	};
 
 	addTag(search: string, tagDetail: string | Tag) {
@@ -76,11 +80,15 @@ export default class MixedTagInput {
 		if (!sel.focusNode) {
 			return;
 		}
+		
+		if(this.options.duplicate === false && this.tags.indexOf(search) > -1){
+			return
+		}
+		
 
 		//finds index of the pattern
 		if (sel.focusNode.nodeValue?.indexOf(search)) {
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
-			console.log("asdad");
 		} else {
 			//In default values, there may be duplicated tag
 			//so each time, we are inserting the last one to avoid error
@@ -118,13 +126,13 @@ export default class MixedTagInput {
 	}
 
 	generateTag(tagDetail: any) {
-		const label = tagDetail?.label
-		const value = tagDetail?.value
+		const label = tagDetail?.label;
+		const value = tagDetail?.value;
 
 		let tagContainer = document.createElement("div");
 		tagContainer.contentEditable = "false";
 		tagContainer.classList.add("clTag__tag");
-		tagContainer.setAttribute('name', `{${value ?? tagDetail}}`)
+		tagContainer.setAttribute("name", `{${value ?? tagDetail}}`);
 		//
 		//FUTURE OPTIONS MAY BE ADDED
 		//
@@ -158,6 +166,9 @@ export default class MixedTagInput {
 		// 		</div>
 		//</div>`
 
+		//saving tags
+		this.tags.push(`{${value ?? tagDetail}}`)
+
 		return tagContainer;
 	}
 
@@ -173,8 +184,11 @@ export default class MixedTagInput {
 
 				if (allowedTags.length > 0) {
 					allowedTags.forEach(allowed => {
+						
 						if (allowed.value === newTag) {
 							this.addTag(`{${allowed.value}}`, allowed);
+						} else {
+							return
 						}
 					});
 				} else {
@@ -226,10 +240,13 @@ export default class MixedTagInput {
 		}
 
 		let removeBtn = tag?.children[0];
-
+		
 		if (removeBtn) {
 			removeBtn.addEventListener("click", () => {
 				if (tag.parentNode && tag) {
+					//removing from "tags" variables
+					this.tags.splice(this.tags.indexOf(tag.getAttribute('name')), 1)
+
 					const range = window.getSelection().getRangeAt(0);
 					range.selectNode(tag);
 					range.deleteContents();

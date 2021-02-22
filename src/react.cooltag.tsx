@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 
 import "./mystyles.scss";
 import MixedTagInput from "./cooltag";
@@ -13,6 +13,7 @@ interface Props {
 	defaultValue?: string;
 	containerClassName?: string;
 	innerRef?: any;
+	duplicate?: boolean
 	onChange?: (inputValue: string) => void;
 }
 
@@ -22,6 +23,7 @@ const defaultProps = {
 	mixed: true,
 	defaultValue: "",
 	containerClassName: "clTag",
+	duplicate: true
 };
 
 const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
@@ -30,20 +32,21 @@ const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
 	defaultValue,
 	containerClassName,
 	innerRef,
-	onChange
+	duplicate,
+	onChange,
 }) => {
-	// const coolTagRef = useRef(innerRef)
 
-	const changeHandler = (newValues) => {
-		onChange(newValues)
-	}
+	const changeHandler = useCallback((newValues: string) => {
+		onChange && onChange(newValues)
+	}, [])
 
 	useEffect(() => {
 		const coolTag = new MixedTagInput({
 			containerClassName,
 			readOnly,
 			allowedTags,
-			changeHandler
+			changeHandler,
+			duplicate
 		});
 
 		coolTag.initWithValue(defaultValue);
