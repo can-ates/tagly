@@ -2,14 +2,19 @@ import "./mystyles.scss";
 import { generateText, getAllIndexes } from "./utils/helpers";
 import { position } from "caret-pos";
 
+interface Tag {
+	label: string;
+	value: string;
+} 
+
 interface IOptions {
 	containerClassName?: string;
 	readOnly?: boolean;
-	allowedTags?: {
-		label: string;
-		value: string;
-	}[];
+	allowedTags?: Tag[];
+	changeHandler?: (inputValue: string) => void;
 }
+
+
 
 export default class MixedTagInput {
 	editableMainDiv: HTMLDivElement;
@@ -27,6 +32,7 @@ export default class MixedTagInput {
 		this.editableMainDiv.classList.add("clTag__input");
 
 		this.editableMainDiv.addEventListener("keyup", this.handleKeyUp);
+		this.editableMainDiv.addEventListener("input", this.handleChange);
 		this.editableMainDiv.addEventListener("blur", this.saveCaret);
 
 		const container = document.querySelector(
@@ -47,8 +53,23 @@ export default class MixedTagInput {
 		this.validateString();
 	};
 
-	addTag(search: string, tagLabel: string) {
-		let sel = window.getSelection();
+	handleChange = () => {
+		const mixedTags = this.editableMainDiv.childNodes
+		
+		let parsedNodes = []
+		
+		mixedTags.forEach((el: Node) => {
+			if(el.firstChild){
+				parsedNodes.push((el as HTMLDivElement).attributes['name'].nodeValue)
+			} else {
+				parsedNodes.push((el as Text).data)
+			}
+		})
+		this.options.changeHandler(parsedNodes.join(''))
+	};
+
+	addTag(search: string, tagDetail: string | Tag) {
+		let sel: Selection = window.getSelection();
 
 		let tagIndex: number;
 
@@ -59,6 +80,7 @@ export default class MixedTagInput {
 		//finds index of the pattern
 		if (sel.focusNode.nodeValue?.indexOf(search)) {
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
+			console.log("asdad");
 		} else {
 			//In default values, there may be duplicated tag
 			//so each time, we are inserting the last one to avoid error
@@ -74,7 +96,7 @@ export default class MixedTagInput {
 			position(this.editableMainDiv, lastItem);
 			tagIndex = lastItem;
 		}
-	
+
 		let startIndex = tagIndex;
 		let endIndex = startIndex + search.length;
 		if (startIndex === -1) {
@@ -89,16 +111,20 @@ export default class MixedTagInput {
 		//Delete search text
 		range.deleteContents();
 
-		const tag = this.generateTag(tagLabel);
+		const tag = this.generateTag(tagDetail);
 
 		//Insert replace text
 		this.injectHTMLAtCaret(tag);
 	}
 
-	generateTag(tagLabel: string) {
+	generateTag(tagDetail: any) {
+		const label = tagDetail?.label
+		const value = tagDetail?.value
+
 		let tagContainer = document.createElement("div");
 		tagContainer.contentEditable = "false";
 		tagContainer.classList.add("clTag__tag");
+		tagContainer.setAttribute('name', `{${value ?? tagDetail}}`)
 		//
 		//FUTURE OPTIONS MAY BE ADDED
 		//
@@ -108,7 +134,7 @@ export default class MixedTagInput {
 		let tag = document.createElement("div");
 		let tagText = document.createElement("span");
 		tagText.classList.add("clTag__tag-text");
-		tagText.innerText = tagLabel;
+		tagText.innerText = label ?? tagDetail;
 
 		tagContainer.appendChild(removeBtn);
 		tagContainer.appendChild(tag);
@@ -121,7 +147,7 @@ export default class MixedTagInput {
 		//>
 		// 		<span
 		// 			class="clTag__tag__removeBtn"
-		//		>		
+		//		>
 		// 		</span>
 		// 		<div>
 		// 			<span
@@ -148,7 +174,7 @@ export default class MixedTagInput {
 				if (allowedTags.length > 0) {
 					allowedTags.forEach(allowed => {
 						if (allowed.value === newTag) {
-							this.addTag(`{${allowed.value}}`, allowed.label);
+							this.addTag(`{${allowed.value}}`, allowed);
 						}
 					});
 				} else {
@@ -217,7 +243,7 @@ export default class MixedTagInput {
 
 		if (window.getSelection) {
 			//checks if browser IE9 > and non-IE
-			sel = window.getSelection(); //returns the current position of caret
+			sel = window.getSelection(); //creates Selection
 			if (sel.getRangeAt && sel.rangeCount) {
 				range = sel.getRangeAt(0);
 
@@ -287,7 +313,7 @@ export default class MixedTagInput {
 		}
 	}
 
-	//to be able to insert external tag
+	//to be able to insert external tagasdasdasd asdasd asd
 	//we must store last position of caret
 	saveCaret = () => {
 		const editable = this.editableMainDiv;

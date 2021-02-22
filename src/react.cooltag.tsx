@@ -13,6 +13,7 @@ interface Props {
 	defaultValue?: string;
 	containerClassName?: string;
 	innerRef?: any;
+	onChange?: (inputValue: string) => void;
 }
 
 const defaultProps = {
@@ -29,19 +30,27 @@ const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
 	defaultValue,
 	containerClassName,
 	innerRef,
+	onChange
 }) => {
 	// const coolTagRef = useRef(innerRef)
+
+	const changeHandler = (newValues) => {
+		onChange(newValues)
+	}
 
 	useEffect(() => {
 		const coolTag = new MixedTagInput({
 			containerClassName,
 			readOnly,
-			allowedTags
+			allowedTags,
+			changeHandler
 		});
 
 		coolTag.initWithValue(defaultValue);
 
 		innerRef.current = coolTag;
+
+		
 
 		return () => {
 			coolTag.destroy();
