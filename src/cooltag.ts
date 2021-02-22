@@ -21,7 +21,7 @@ export default class MixedTagInput {
 	caretPosition: number = 0;
 	editMode: boolean = false;
 	inputValue: string;
-	tags: string[] = []
+	tags: string[] = [];
 
 	constructor(options: IOptions) {
 		this.options = options;
@@ -80,14 +80,20 @@ export default class MixedTagInput {
 		if (!sel.focusNode) {
 			return;
 		}
-		
-		if(this.options.duplicate === false && this.tags.indexOf(search) > -1){
-			return
-		}
-		
 
+		
+		//if duplicate not allowed wont proceed
+		if (
+			this.options.duplicate === false &&
+			this.tags.indexOf(search) > -1
+		) {
+			return;
+		}
+
+		
 		//finds index of the pattern
-		if (sel.focusNode.nodeValue?.indexOf(search)) {
+		if (sel.focusNode.nodeValue?.indexOf(search) >= 0) {
+			
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
 		} else {
 			//In default values, there may be duplicated tag
@@ -167,7 +173,7 @@ export default class MixedTagInput {
 		//</div>`
 
 		//saving tags
-		this.tags.push(`{${value ?? tagDetail}}`)
+		this.tags.push(`{${value ?? tagDetail}}`);
 
 		return tagContainer;
 	}
@@ -184,11 +190,10 @@ export default class MixedTagInput {
 
 				if (allowedTags.length > 0) {
 					allowedTags.forEach(allowed => {
-						
 						if (allowed.value === newTag) {
 							this.addTag(`{${allowed.value}}`, allowed);
 						} else {
-							return
+							return;
 						}
 					});
 				} else {
@@ -209,14 +214,16 @@ export default class MixedTagInput {
 
 		this.injectHTMLAtCaret(`{${randomString}}`);
 
+		
+		let endOfString = position(editable).pos;
+		
+		endOfString--;
+		position(editable, endOfString);
+		
+
 		//When external string is inserted, Selection API
 		//can't see this change.
-		let endOfString = position(editable).pos;
-		endOfString--;
-
-		//So, this line basically focuses inserted string
-		//by placing caret over it.
-		position(editable, endOfString);
+		
 		this.addTag(`{${randomString}}`, randomString);
 
 		this.caretPosition = position(editable).pos;
@@ -240,12 +247,15 @@ export default class MixedTagInput {
 		}
 
 		let removeBtn = tag?.children[0];
-		
+
 		if (removeBtn) {
 			removeBtn.addEventListener("click", () => {
 				if (tag.parentNode && tag) {
-					//removing from "tags" variables
-					this.tags.splice(this.tags.indexOf(tag.getAttribute('name')), 1)
+					//removing from "tags" array
+					this.tags.splice(
+						this.tags.indexOf(tag.getAttribute("name")),
+						1
+					);
 
 					const range = window.getSelection().getRangeAt(0);
 					range.selectNode(tag);
@@ -299,11 +309,12 @@ export default class MixedTagInput {
 				//If there is a tag element, we insert newly created
 				//tag after this tag.
 				//!If we don't, it adds the tag inside other tag
+				
 				if (
 					//TODO use better comparison
-					(sel.focusNode.parentNode as any).className === "clTag__tag"
+					(sel.focusNode.parentNode as any).className === "clTag__tag-text"
 				) {
-					range.setStartAfter(sel.focusNode.parentNode);
+					range.setStartAfter(sel.focusNode.parentNode.parentNode.parentNode);
 				}
 
 				range.collapse(false);
@@ -330,7 +341,7 @@ export default class MixedTagInput {
 		}
 	}
 
-	//to be able to insert external tagasdasdasd asdasd asd
+	//to be able to insert external tag
 	//we must store last position of caret
 	saveCaret = () => {
 		const editable = this.editableMainDiv;
