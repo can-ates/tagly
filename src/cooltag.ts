@@ -203,16 +203,15 @@ export default class MixedTagInput {
 		}
 	}
 
-	externalTag() {
+	externalTag(newTag: string) {
 		const editable = this.editableMainDiv;
 
 		editable.focus();
 		//places caret last saved position
 		position(editable, this.caretPosition);
 
-		const randomString = generateText(7);
 
-		this.injectHTMLAtCaret(`{${randomString}}`);
+		this.injectHTMLAtCaret(newTag);
 
 		
 		let endOfString = position(editable).pos;
@@ -224,7 +223,7 @@ export default class MixedTagInput {
 		//When external string is inserted, Selection API
 		//can't see this change.
 		
-		this.addTag(`{${randomString}}`, randomString);
+		this.validateString()
 
 		this.caretPosition = position(editable).pos;
 	}
@@ -244,6 +243,10 @@ export default class MixedTagInput {
 				(tagText as HTMLSpanElement).blur();
 				tagText.setAttribute("contenteditable", "false");
 			});
+
+			tagText.addEventListener('input', (e: InputEvent) => {
+				console.log(e)
+			})
 		}
 
 		let removeBtn = tag?.children[0];
@@ -345,8 +348,11 @@ export default class MixedTagInput {
 	//we must store last position of caret
 	saveCaret = () => {
 		const editable = this.editableMainDiv;
+		console.log(editable)
 		if (!this.editMode) {
+			console.log(position(editable).pos)
 			this.caretPosition = position(editable).pos;
+			console.log(this.caretPosition)
 		} else {
 			this.editMode = false;
 		}
