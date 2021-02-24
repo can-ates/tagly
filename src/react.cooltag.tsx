@@ -10,7 +10,7 @@ interface Props {
 		value: string;
 	}[];
 	mixed?: boolean;
-	defaultValue?: string;
+	defaultValue?: string | string[];
 	containerClassName?: string;
 	innerRef?: any;
 	duplicate?: boolean
@@ -34,6 +34,7 @@ const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
 	innerRef,
 	duplicate,
 	onChange,
+	mixed
 }) => {
 
 	const changeHandler = useCallback((newValues: string) => {
@@ -46,7 +47,8 @@ const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
 			readOnly,
 			allowedTags,
 			changeHandler,
-			duplicate
+			duplicate,
+			mixed
 		});
 
 		coolTag.initWithValue(defaultValue);

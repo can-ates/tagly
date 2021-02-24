@@ -12,6 +12,7 @@ interface IOptions {
 	readOnly?: boolean;
 	allowedTags?: Tag[];
 	duplicate?: boolean;
+	mixed?: boolean;
 	changeHandler?: (inputValue: string) => void;
 }
 
@@ -27,12 +28,24 @@ export default class MixedTagInput {
 		this.options = options;
 	}
 
-	initWithValue(defaultValue: string) {
+	initWithValue(defaultValue: string | string[]) {
 		this.editableMainDiv = document.createElement("div");
 		this.editableMainDiv.contentEditable = "true";
 		this.editableMainDiv.classList.add("clTag__input");
 
-		this.editableMainDiv.addEventListener("keyup", this.handleKeyUp);
+		const isMixed = this.options.mixed;
+
+		this.editableMainDiv.addEventListener(
+			"keyup",
+			isMixed ? this.handleMixedKeyUp : this.handleKeyUp
+		);
+		!isMixed &&
+			this.editableMainDiv.addEventListener("click", this.handleClick);
+		!isMixed &&
+			this.editableMainDiv.addEventListener(
+				"keydown",
+				this.handleKeyDown
+			);
 		this.editableMainDiv.addEventListener("input", this.handleChange);
 		this.editableMainDiv.addEventListener("blur", this.saveCaret);
 
@@ -43,15 +56,60 @@ export default class MixedTagInput {
 
 		this.editableMainDiv.focus();
 
+		Array.isArray(defaultValue)
+			? defaultValue.map(value => {
+					const tag = this.generateTag(value);
+					this.injectHTMLAtCaret(tag);
+			  })
+			: this.injectHTMLAtCaret(defaultValue);
 		//Injecting default values
-		this.injectHTMLAtCaret(defaultValue);
 
 		//checks if there are tags in default values
-		this.validateString();
+		isMixed && this.validateMixedString();
 	}
 
-	handleKeyUp = () => {
-		this.validateString();
+	//basically places caret at end to accomplish the
+	//purpose of tag-only input
+	handleClick = async () => {
+		const editable = this.editableMainDiv;
+		editable.focus();
+
+		//checks for browser support
+		if (
+			typeof window.getSelection != "undefined" &&
+			typeof document.createRange != "undefined"
+		) {
+			var range = document.createRange();
+			range.selectNodeContents(editable);
+			range.collapse(false); //this sets caret to end
+			var sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(range);
+			//@ts-ignore
+		} else if (typeof document.body.createTextRange != "undefined") {
+			//@ts-ignore
+			var textRange = document.body.createTextRange();
+			textRange.moveToElementText(editable);
+			textRange.collapse(false);
+			textRange.select();
+		}
+	};
+
+	handleKeyDown = (e: KeyboardEvent) => {
+		//prevents starting a new line in tag-only input
+		if (e.code === "Enter") {
+			e.preventDefault();
+
+			let sel: Selection = window.getSelection();
+			const text = sel.focusNode.nodeValue;
+			this.addTag(text, text)
+		}
+	};
+
+	handleKeyUp = (e: KeyboardEvent) => {};
+
+	handleMixedKeyUp = () => {
+		this.validateMixedString();
 	};
 
 	handleChange = () => {
@@ -81,7 +139,6 @@ export default class MixedTagInput {
 			return;
 		}
 
-		
 		//if duplicate not allowed wont proceed
 		if (
 			this.options.duplicate === false &&
@@ -90,10 +147,8 @@ export default class MixedTagInput {
 			return;
 		}
 
-		
 		//finds index of the pattern
 		if (sel.focusNode.nodeValue?.indexOf(search) >= 0) {
-			
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
 		} else {
 			//In default values, there may be duplicated tag
@@ -178,7 +233,7 @@ export default class MixedTagInput {
 		return tagContainer;
 	}
 
-	validateString() {
+	validateMixedString() {
 		const editableText = this.editableMainDiv.innerText;
 		const allowedTags = this.options.allowedTags;
 
@@ -210,20 +265,17 @@ export default class MixedTagInput {
 		//places caret last saved position
 		position(editable, this.caretPosition);
 
-
 		this.injectHTMLAtCaret(newTag);
 
-		
 		let endOfString = position(editable).pos;
-		
+
 		endOfString--;
 		position(editable, endOfString);
-		
 
 		//When external string is inserted, Selection API
 		//can't see this change.
-		
-		this.validateString()
+
+		this.validateMixedString();
 
 		this.caretPosition = position(editable).pos;
 	}
@@ -244,9 +296,9 @@ export default class MixedTagInput {
 				tagText.setAttribute("contenteditable", "false");
 			});
 
-			tagText.addEventListener('input', (e: InputEvent) => {
-				console.log(e)
-			})
+			tagText.addEventListener("input", (e: InputEvent) => {
+				console.log(e);
+			});
 		}
 
 		let removeBtn = tag?.children[0];
@@ -312,12 +364,15 @@ export default class MixedTagInput {
 				//If there is a tag element, we insert newly created
 				//tag after this tag.
 				//!If we don't, it adds the tag inside other tag
-				
+
 				if (
 					//TODO use better comparison
-					(sel.focusNode.parentNode as any).className === "clTag__tag-text"
+					(sel.focusNode.parentNode as any).className ===
+					"clTag__tag-text"
 				) {
-					range.setStartAfter(sel.focusNode.parentNode.parentNode.parentNode);
+					range.setStartAfter(
+						sel.focusNode.parentNode.parentNode.parentNode
+					);
 				}
 
 				range.collapse(false);
@@ -348,11 +403,9 @@ export default class MixedTagInput {
 	//we must store last position of caret
 	saveCaret = () => {
 		const editable = this.editableMainDiv;
-		console.log(editable)
+
 		if (!this.editMode) {
-			console.log(position(editable).pos)
 			this.caretPosition = position(editable).pos;
-			console.log(this.caretPosition)
 		} else {
 			this.editMode = false;
 		}
