@@ -41,6 +41,8 @@ export default class TagInput {
 				this.handleMixedKeyUp
 			);
 
+			
+
 		!isMixed &&
 			this.editableMainDiv.addEventListener("click", this.handleClick);
 
@@ -74,18 +76,21 @@ export default class TagInput {
 	//basically places caret at end to accomplish the
 	//purpose of tag-only input
 	handleClick = () => {
+		console.log('asd')
 		const editable = this.editableMainDiv;
 		editable.focus();
 
 		//checks for browser support
 		if (
 			typeof window.getSelection != "undefined" &&
-			typeof document.createRange != "undefined"
+			typeof document.createRange != "undefined" &&
+			!this.editMode
 		) {
 			let sel = window.getSelection();
 			let range = document.createRange();
 			//if caret is not over text
-			if (sel.focusNode.nodeType == 1) {
+			
+			if (sel.focusNode.nodeType == 1 || sel.focusOffset == 0) {
 				range.selectNodeContents(editable);
 				range.collapse(false); //this sets caret to end
 				sel.removeAllRanges();
@@ -93,7 +98,7 @@ export default class TagInput {
 			}
 
 			//@ts-ignore
-		} else if (typeof document.body.createTextRange != "undefined") {
+		} else if (typeof document.body.createTextRange != "undefined" && !this.editMode) {
 			//@ts-ignore
 			let textRange = document.body.createTextRange();
 			textRange.moveToElementText(editable);
@@ -142,6 +147,7 @@ export default class TagInput {
 	};
 
 	handleChange = () => {
+
 		const mixedTags = this.editableMainDiv.childNodes;
 
 		let parsedNodes = [];
@@ -178,7 +184,7 @@ export default class TagInput {
 
 		//finds index of the pattern
 		if (sel.focusNode.nodeValue?.indexOf(search) >= 0) {
-			console.log("hehe");
+			
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
 		} else {
 			//In default values, there may be duplicated tag

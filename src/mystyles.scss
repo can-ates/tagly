@@ -24,7 +24,6 @@
     position: relative;
     box-sizing: inherit;
     
-    
 	}
 
 	&__tag {
@@ -45,6 +44,7 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    
 
     & *:after {
       -webkit-user-select: auto; /* Chrome/Safari */
