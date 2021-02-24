@@ -34,14 +34,13 @@ export default class TagInput {
 		this.editableMainDiv.classList.add("clTag__input");
 
 		const isMixed = this.options.mixed;
+		const allowedTags = this.options.allowedTags;
 
 		isMixed &&
 			this.editableMainDiv.addEventListener(
 				"keyup",
 				this.handleMixedKeyUp
 			);
-
-			
 
 		!isMixed &&
 			this.editableMainDiv.addEventListener("click", this.handleClick);
@@ -52,7 +51,7 @@ export default class TagInput {
 				this.handleKeyDown
 			);
 		this.editableMainDiv.addEventListener("input", this.handleChange);
-		this.editableMainDiv.addEventListener("blur", this.saveCaret);
+		isMixed && this.editableMainDiv.addEventListener("blur", this.saveCaret);
 
 		const container = document.querySelector(
 			`.${this.options.containerClassName}`
@@ -64,8 +63,17 @@ export default class TagInput {
 		//Injecting default values
 		Array.isArray(defaultValue)
 			? defaultValue.map(value => {
-					const tag = this.generateTag(value);
-					this.injectHTMLAtCaret(tag);
+					if (allowedTags.length > 0) {
+						allowedTags.forEach(allowed => {
+							if (allowed.value === value) {
+								this.addTag(value, allowed);
+							} else {
+								return;
+							}
+						});
+					} else {
+						this.addTag(value, value);
+					}
 			  })
 			: this.injectHTMLAtCaret(defaultValue);
 
@@ -76,7 +84,7 @@ export default class TagInput {
 	//basically places caret at end to accomplish the
 	//purpose of tag-only input
 	handleClick = () => {
-		console.log('asd')
+		console.log("asd");
 		const editable = this.editableMainDiv;
 		editable.focus();
 
@@ -88,8 +96,7 @@ export default class TagInput {
 		) {
 			let sel = window.getSelection();
 			let range = document.createRange();
-			//if caret is not over text
-			
+			//if caret is not over text or distance of caret from tag is 0
 			if (sel.focusNode.nodeType == 1 || sel.focusOffset == 0) {
 				range.selectNodeContents(editable);
 				range.collapse(false); //this sets caret to end
@@ -98,7 +105,11 @@ export default class TagInput {
 			}
 
 			//@ts-ignore
-		} else if (typeof document.body.createTextRange != "undefined" && !this.editMode) {
+		} else if (
+			//@ts-ignore
+			typeof document.body.createTextRange != "undefined" &&
+			!this.editMode
+		) {
 			//@ts-ignore
 			let textRange = document.body.createTextRange();
 			textRange.moveToElementText(editable);
@@ -119,35 +130,17 @@ export default class TagInput {
 		//prevents starting a new line in tag-only input
 		if (e.code === "Enter") {
 			e.preventDefault();
-			
 			const text = sel.focusNode.nodeValue;
 
-			this.convertText(text)
+			this.convertText(text);
 		}
 	};
-
-	convertText(text: string){
-		const editable = this.editableMainDiv
-
-		//when text losing focus, focusNode become null.
-		//we set caret position to get text again.
-		if(text == null){
-			position(editable, position(editable).pos)
-			let sel = window.getSelection()
-			this.convertText(sel.focusNode.nodeValue)
-		}
-
-		if (text?.length > 0) {
-			this.addTag(text, text);
-		}
-	}
 
 	handleMixedKeyUp = () => {
 		this.validateMixedString();
 	};
 
 	handleChange = () => {
-
 		const mixedTags = this.editableMainDiv.childNodes;
 
 		let parsedNodes = [];
@@ -165,6 +158,33 @@ export default class TagInput {
 		this.options.changeHandler(parsedNodes.join(""));
 	};
 
+	convertText(text: string) {
+		const editable = this.editableMainDiv;
+
+		//when text losing focus, focusNode become null.
+		//we set caret position to get text again.
+		if (text == null) {
+			position(editable, position(editable).pos);
+			let sel = window.getSelection();
+			this.convertText(sel.focusNode.nodeValue);
+		}
+
+		if (text?.length > 0) {
+			const allowedTags = this.options.allowedTags;
+			if (allowedTags.length > 0) {
+				allowedTags.forEach(allowed => {
+					if (allowed.value === text) {
+						this.addTag(text, allowed);
+					} else {
+						return;
+					}
+				});
+			} else {
+				this.addTag(text, text);
+			}
+		}
+	}
+
 	addTag(search: string, tagDetail: string | Tag) {
 		let sel: Selection = window.getSelection();
 
@@ -177,14 +197,14 @@ export default class TagInput {
 		//if duplicate not allowed wont proceed
 		if (
 			this.options.duplicate === false &&
-			this.tags.indexOf(search) > -1
+			(this.tags.indexOf(search) > -1 ||
+				this.tags.indexOf(`{${search}}`) > -1)
 		) {
 			return;
 		}
 
 		//finds index of the pattern
 		if (sel.focusNode.nodeValue?.indexOf(search) >= 0) {
-			
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
 		} else {
 			//In default values, there may be duplicated tag

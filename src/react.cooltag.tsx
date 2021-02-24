@@ -51,7 +51,14 @@ const TaglyReactComponent: React.FunctionComponent<Props> = ({
 			mixed
 		});
 
-		coolTag.initWithValue(defaultValue);
+		let values: string | string[]
+		if(!mixed && !Array.isArray(defaultValue)){
+			values = [defaultValue]
+		} else {
+			values = defaultValue
+		}
+
+		coolTag.initWithValue(values);
 
 		innerRef.current = coolTag;
 
