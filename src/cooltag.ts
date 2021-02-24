@@ -66,7 +66,6 @@ export default class TagInput {
 					this.injectHTMLAtCaret(tag);
 			  })
 			: this.injectHTMLAtCaret(defaultValue);
-		
 
 		//checks if there are tags in default values
 		isMixed && this.validateMixedString();
@@ -83,16 +82,20 @@ export default class TagInput {
 			typeof window.getSelection != "undefined" &&
 			typeof document.createRange != "undefined"
 		) {
-			var range = document.createRange();
-			range.selectNodeContents(editable);
-			range.collapse(false); //this sets caret to end
-			var sel = window.getSelection();
-			sel.removeAllRanges();
-			sel.addRange(range);
+			let sel = window.getSelection();
+			let range = document.createRange();
+			//if caret is not over text
+			if (sel.focusNode.nodeType == 1) {
+				range.selectNodeContents(editable);
+				range.collapse(false); //this sets caret to end
+				sel.removeAllRanges();
+				sel.addRange(range);
+			}
+
 			//@ts-ignore
 		} else if (typeof document.body.createTextRange != "undefined") {
 			//@ts-ignore
-			var textRange = document.body.createTextRange();
+			let textRange = document.body.createTextRange();
 			textRange.moveToElementText(editable);
 			textRange.collapse(false);
 			textRange.select();
@@ -101,21 +104,38 @@ export default class TagInput {
 
 	handleKeyDown = (e: KeyboardEvent) => {
 		let sel: Selection = window.getSelection();
-		
-		if (e.code === "ArrowLeft" && (sel.focusOffset == 0 || sel.focusNode.nodeType == 1)) {
+
+		if (
+			e.code === "ArrowLeft" &&
+			(sel.focusOffset == 0 || sel.focusNode.nodeType == 1)
+		) {
 			e.preventDefault();
 		}
 		//prevents starting a new line in tag-only input
 		if (e.code === "Enter") {
 			e.preventDefault();
-
+			
 			const text = sel.focusNode.nodeValue;
 
-			if (text?.length > 0) {
-				this.addTag(text, text);
-			}
+			this.convertText(text)
 		}
 	};
+
+	convertText(text: string){
+		const editable = this.editableMainDiv
+
+		//when text losing focus, focusNode become null.
+		//we set caret position to get text again.
+		if(text == null){
+			position(editable, position(editable).pos)
+			let sel = window.getSelection()
+			this.convertText(sel.focusNode.nodeValue)
+		}
+
+		if (text?.length > 0) {
+			this.addTag(text, text);
+		}
+	}
 
 	handleMixedKeyUp = () => {
 		this.validateMixedString();
