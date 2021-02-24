@@ -35,12 +35,15 @@ export default class MixedTagInput {
 
 		const isMixed = this.options.mixed;
 
-		this.editableMainDiv.addEventListener(
-			"keyup",
-			isMixed ? this.handleMixedKeyUp : this.handleKeyUp
-		);
+		isMixed &&
+			this.editableMainDiv.addEventListener(
+				"keyup",
+				this.handleMixedKeyUp
+			);
+
 		!isMixed &&
 			this.editableMainDiv.addEventListener("click", this.handleClick);
+
 		!isMixed &&
 			this.editableMainDiv.addEventListener(
 				"keydown",
@@ -96,17 +99,22 @@ export default class MixedTagInput {
 	};
 
 	handleKeyDown = (e: KeyboardEvent) => {
+		let sel: Selection = window.getSelection();
+		
+		if (e.code === "ArrowLeft" && (sel.focusOffset == 0 || sel.focusNode.nodeType == 1)) {
+			e.preventDefault();
+		}
 		//prevents starting a new line in tag-only input
 		if (e.code === "Enter") {
 			e.preventDefault();
 
-			let sel: Selection = window.getSelection();
 			const text = sel.focusNode.nodeValue;
-			this.addTag(text, text)
+
+			if (text?.length > 0) {
+				this.addTag(text, text);
+			}
 		}
 	};
-
-	handleKeyUp = (e: KeyboardEvent) => {};
 
 	handleMixedKeyUp = () => {
 		this.validateMixedString();
@@ -149,6 +157,7 @@ export default class MixedTagInput {
 
 		//finds index of the pattern
 		if (sel.focusNode.nodeValue?.indexOf(search) >= 0) {
+			console.log("hehe");
 			tagIndex = sel.focusNode.nodeValue.indexOf(search);
 		} else {
 			//In default values, there may be duplicated tag
