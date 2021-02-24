@@ -1,3 +1,3 @@
-import MixedTagly from "./react.cooltag";
+import Tagly from "./react.cooltag";
 
-export { MixedTagly };
+export { Tagly };

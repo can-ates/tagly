@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from "react";
 
 import "./mystyles.scss";
-import MixedTagInput from "./cooltag";
+import TagInput from "./cooltag";
 
 interface Props {
 	readOnly?: boolean;
@@ -26,7 +26,7 @@ const defaultProps = {
 	duplicate: true
 };
 
-const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
+const TaglyReactComponent: React.FunctionComponent<Props> = ({
 	readOnly,
 	allowedTags,
 	defaultValue,
@@ -42,7 +42,7 @@ const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
 	}, [])
 
 	useEffect(() => {
-		const coolTag = new MixedTagInput({
+		const coolTag = new TagInput({
 			containerClassName,
 			readOnly,
 			allowedTags,
@@ -69,5 +69,5 @@ const MixedTagInputReactComponent: React.FunctionComponent<Props> = ({
 	);
 };
 
-MixedTagInputReactComponent.defaultProps = defaultProps;
-export default MixedTagInputReactComponent;
+TaglyReactComponent.defaultProps = defaultProps;
+export default TaglyReactComponent;

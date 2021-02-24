@@ -1,5 +1,5 @@
 import "./mystyles.scss";
-import { generateText, getAllIndexes } from "./utils/helpers";
+import { getAllIndexes } from "./utils/helpers";
 import { position } from "caret-pos";
 
 interface Tag {
@@ -16,7 +16,7 @@ interface IOptions {
 	changeHandler?: (inputValue: string) => void;
 }
 
-export default class MixedTagInput {
+export default class TagInput {
 	editableMainDiv: HTMLDivElement;
 	options: IOptions;
 	caretPosition: number = 0;
@@ -59,13 +59,14 @@ export default class MixedTagInput {
 
 		this.editableMainDiv.focus();
 
+		//Injecting default values
 		Array.isArray(defaultValue)
 			? defaultValue.map(value => {
 					const tag = this.generateTag(value);
 					this.injectHTMLAtCaret(tag);
 			  })
 			: this.injectHTMLAtCaret(defaultValue);
-		//Injecting default values
+		
 
 		//checks if there are tags in default values
 		isMixed && this.validateMixedString();
@@ -73,7 +74,7 @@ export default class MixedTagInput {
 
 	//basically places caret at end to accomplish the
 	//purpose of tag-only input
-	handleClick = async () => {
+	handleClick = () => {
 		const editable = this.editableMainDiv;
 		editable.focus();
 
