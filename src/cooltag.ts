@@ -36,22 +36,19 @@ export default class TagInput {
 		const isMixed = this.options.mixed;
 		const allowedTags = this.options.allowedTags;
 
-		isMixed &&
-			this.editableMainDiv.addEventListener(
-				"keyup",
-				this.handleMixedKeyUp
-			);
+		this.editableMainDiv.addEventListener(
+			"keydown",
+			isMixed ? this.handleMixedKeyDown : this.handleKeyDown
+		);
+
+		this.editableMainDiv.addEventListener("keyup", this.handleKeyUp);
 
 		!isMixed &&
 			this.editableMainDiv.addEventListener("click", this.handleClick);
 
-		!isMixed &&
-			this.editableMainDiv.addEventListener(
-				"keydown",
-				this.handleKeyDown
-			);
 		this.editableMainDiv.addEventListener("input", this.handleChange);
-		isMixed && this.editableMainDiv.addEventListener("blur", this.saveCaret);
+		isMixed &&
+			this.editableMainDiv.addEventListener("blur", this.saveCaret);
 
 		const container = document.querySelector(
 			`.${this.options.containerClassName}`
@@ -118,6 +115,15 @@ export default class TagInput {
 		}
 	};
 
+	//check if tag has been deleted by backspace
+	handleKeyUp = () => {
+		this.tags.forEach(tag => {
+			if (this.inputValue.indexOf(tag) < 0) {
+				this.tags.splice(this.tags.indexOf(tag), 1);
+			}
+		});
+	};
+
 	handleKeyDown = (e: KeyboardEvent) => {
 		let sel: Selection = window.getSelection();
 
@@ -136,20 +142,37 @@ export default class TagInput {
 		}
 	};
 
-	handleMixedKeyUp = () => {
+	handleMixedKeyDown = () => {
 		this.validateMixedString();
 	};
 
 	handleChange = () => {
 		const mixedTags = this.editableMainDiv.childNodes;
-
+		console.log(mixedTags);
 		let parsedNodes = [];
 
 		mixedTags.forEach((el: Node) => {
 			if (el.firstChild) {
-				parsedNodes.push(
-					(el as HTMLDivElement).attributes["name"].nodeValue
-				);
+				if ((el as Element).attributes.length == 0) {
+					console.log('div')
+					let innerChildren = el.childNodes;
+					innerChildren.forEach(innerEl => {
+						if (innerEl.firstChild) {
+							console.log('tag')
+							parsedNodes.push(
+								(innerEl as HTMLDivElement).attributes["name"]
+									.nodeValue
+							);
+						} else {
+							parsedNodes.push((innerEl as Text).data);
+						}
+					});
+				} else {
+					console.log('text')
+					parsedNodes.push(
+						(el as HTMLDivElement).attributes["name"].nodeValue
+					);
+				}
 			} else {
 				parsedNodes.push((el as Text).data);
 			}
