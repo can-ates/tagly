@@ -117,11 +117,13 @@ export default class TagInput {
 
 	//check if tag has been deleted by backspace
 	handleKeyUp = () => {
-		this.tags.forEach(tag => {
-			if (this.inputValue.indexOf(tag) < 0) {
-				this.tags.splice(this.tags.indexOf(tag), 1);
-			}
-		});
+		if (!this.editMode) {
+			this.tags.forEach(tag => {
+				if (this.inputValue.indexOf(tag) < 0) {
+					this.tags.splice(this.tags.indexOf(tag), 1);
+				}
+			});
+		}
 	};
 
 	handleKeyDown = (e: KeyboardEvent) => {
@@ -154,11 +156,9 @@ export default class TagInput {
 		mixedTags.forEach((el: Node) => {
 			if (el.firstChild) {
 				if ((el as Element).attributes.length == 0) {
-					console.log('div')
 					let innerChildren = el.childNodes;
 					innerChildren.forEach(innerEl => {
 						if (innerEl.firstChild) {
-							console.log('tag')
 							parsedNodes.push(
 								(innerEl as HTMLDivElement).attributes["name"]
 									.nodeValue
@@ -168,7 +168,6 @@ export default class TagInput {
 						}
 					});
 				} else {
-					console.log('text')
 					parsedNodes.push(
 						(el as HTMLDivElement).attributes["name"].nodeValue
 					);
@@ -179,6 +178,18 @@ export default class TagInput {
 		});
 		this.inputValue = parsedNodes.join("");
 		this.options.changeHandler(parsedNodes.join(""));
+	};
+
+	//to be able to insert external tag
+	//we must store last position of caret
+	saveCaret = () => {
+		const editable = this.editableMainDiv;
+
+		if (!this.editMode) {
+			this.caretPosition = position(editable).pos;
+		} else {
+			this.editMode = false;
+		}
 	};
 
 	convertText(text: string) {
@@ -365,18 +376,35 @@ export default class TagInput {
 			tag.addEventListener("dblclick", () => {
 				tag.classList.add("clTag__tag--editable");
 				tagText.setAttribute("contenteditable", "true");
+				tagText.textContent = tag.getAttribute("name").slice(1, -1);
 				(tagText as HTMLSpanElement).focus();
 				this.editMode = true;
 			});
 
 			tagText.addEventListener("focusout", () => {
-				tag.classList.remove("clTag__tag--editable");
-				(tagText as HTMLSpanElement).blur();
-				tagText.setAttribute("contenteditable", "false");
-			});
+				const allowedTags = this.options.allowedTags;
+				const tagValue = tag.getAttribute("name").slice(1, -1);
 
-			tagText.addEventListener("input", (e: InputEvent) => {
-				console.log(e);
+				if (allowedTags.length > 0 && tagText.textContent != tagValue) {
+					allowedTags.forEach(tagEl => {
+						if (tagEl.value === tagText.textContent) {
+							tagText.textContent = tagEl.label;
+							tag.setAttribute("name", `{${tagEl.value}}`);
+							tagText.setAttribute("contenteditable", "false");
+							tag.classList.remove("clTag__tag--editable");
+						}
+					});
+				} else {
+					allowedTags.forEach(tagEl => {
+						if (tagEl.value === tagText.textContent) {
+							tagText.textContent = tagEl.label;
+						}
+					});
+					tagText.setAttribute("contenteditable", "false");
+					tag.classList.remove("clTag__tag--editable");
+				}
+
+				(tagText as HTMLSpanElement).blur();
 			});
 		}
 
@@ -477,18 +505,6 @@ export default class TagInput {
 			document.selection.createRange().pasteHTML(html);
 		}
 	}
-
-	//to be able to insert external tag
-	//we must store last position of caret
-	saveCaret = () => {
-		const editable = this.editableMainDiv;
-
-		if (!this.editMode) {
-			this.caretPosition = position(editable).pos;
-		} else {
-			this.editMode = false;
-		}
-	};
 
 	//prevents rendering new object by any changes made in component
 	destroy() {
