@@ -8,7 +8,7 @@ interface Tag {
 }
 
 interface IOptions {
-	containerClassName?: string;
+	containerClassName: string;
 	readOnly?: boolean;
 	allowedTags?: Tag[];
 	duplicate?: boolean;
@@ -16,7 +16,7 @@ interface IOptions {
 	changeHandler?: (inputValue: string) => void;
 }
 
-export default class TagInput {
+export default class Tagly {
 	editableMainDiv: HTMLDivElement;
 	options: IOptions;
 	caretPosition: number = 0;
@@ -31,7 +31,7 @@ export default class TagInput {
 	initWithValue(defaultValue: string | string[]) {
 		this.editableMainDiv = document.createElement("div");
 		this.editableMainDiv.contentEditable = "true";
-		this.editableMainDiv.classList.add("clTag__input");
+		this.editableMainDiv.classList.add("tagly__input");
 
 		const isMixed = this.options.mixed;
 		const allowedTags = this.options.allowedTags;
@@ -57,9 +57,17 @@ export default class TagInput {
 
 		this.editableMainDiv.focus();
 
+		let values: string | string[];
+
+		if (!isMixed && !Array.isArray(defaultValue)) {
+			values = [defaultValue];
+		} else {
+			values = defaultValue;
+		}
+
 		//Injecting default values
-		Array.isArray(defaultValue)
-			? defaultValue.map(value => {
+		Array.isArray(values)
+			? values.map(value => {
 					if (allowedTags.length > 0) {
 						allowedTags.forEach(allowed => {
 							if (allowed.value === value) {
@@ -72,7 +80,7 @@ export default class TagInput {
 						this.addTag(value, value);
 					}
 			  })
-			: this.injectHTMLAtCaret(defaultValue);
+			: this.injectHTMLAtCaret(values);
 
 		//checks if there are tags in default values
 		isMixed && this.validateMixedString();
@@ -81,7 +89,6 @@ export default class TagInput {
 	//basically places caret at end to accomplish the
 	//purpose of tag-only input
 	handleClick = () => {
-		console.log("asd");
 		const editable = this.editableMainDiv;
 		editable.focus();
 
@@ -119,7 +126,7 @@ export default class TagInput {
 	handleKeyUp = () => {
 		if (!this.editMode) {
 			this.tags.forEach(tag => {
-				if (this.inputValue.indexOf(tag) < 0) {
+				if (this.inputValue?.indexOf(tag) < 0) {
 					this.tags.splice(this.tags.indexOf(tag), 1);
 				}
 			});
@@ -282,17 +289,17 @@ export default class TagInput {
 
 		let tagContainer = document.createElement("div");
 		tagContainer.contentEditable = "false";
-		tagContainer.classList.add("clTag__tag");
+		tagContainer.classList.add("tagly__tag");
 		tagContainer.setAttribute("name", `{${value ?? tagDetail}}`);
 		//
 		//FUTURE OPTIONS MAY BE ADDED
 		//
 		let removeBtn = document.createElement("span");
-		removeBtn.classList.add("clTag__tag__removeBtn");
+		removeBtn.classList.add("tagly__tag__removeBtn");
 
 		let tag = document.createElement("div");
 		let tagText = document.createElement("span");
-		tagText.classList.add("clTag__tag-text");
+		tagText.classList.add("tagly__tag-text");
 		tagText.innerText = label ?? tagDetail;
 
 		tagContainer.appendChild(removeBtn);
@@ -302,15 +309,15 @@ export default class TagInput {
 		//TAG STRUCTURE
 		//<div
 		// 	contenteditable='false'
-		// 	class="clTag__tag"
+		// 	class="tagly__tag"
 		//>
 		// 		<span
-		// 			class="clTag__tag__removeBtn"
+		// 			class="tagly__tag__removeBtn"
 		//		>
 		// 		</span>
 		// 		<div>
 		// 			<span
-		// 				class="clTag__tag-text"
+		// 				class="tagly__tag-text"
 		// 			>
 		// 				TEXT
 		// 			</span>
@@ -348,7 +355,7 @@ export default class TagInput {
 		}
 	}
 
-	externalTag(newTag: string) {
+	addExternalTag(newTag: string) {
 		const editable = this.editableMainDiv;
 
 		editable.focus();
@@ -374,7 +381,7 @@ export default class TagInput {
 		if (!this.options.readOnly && tag) {
 			let tagText = tag.children[1].firstElementChild;
 			tag.addEventListener("dblclick", () => {
-				tag.classList.add("clTag__tag--editable");
+				tag.classList.add("tagly__tag--editable");
 				tagText.setAttribute("contenteditable", "true");
 				tagText.textContent = tag.getAttribute("name").slice(1, -1);
 				(tagText as HTMLSpanElement).focus();
@@ -383,25 +390,30 @@ export default class TagInput {
 
 			tagText.addEventListener("focusout", () => {
 				const allowedTags = this.options.allowedTags;
-				const tagValue = tag.getAttribute("name").slice(1, -1);
 
-				if (allowedTags.length > 0 && tagText.textContent != tagValue) {
+				if (tagText.textContent === "") {
+					this.removeTag(tag);
+					return
+				}
+
+				if (allowedTags.length > 0) {
+					let tagData: Tag;
 					allowedTags.forEach(tagEl => {
 						if (tagEl.value === tagText.textContent) {
-							tagText.textContent = tagEl.label;
-							tag.setAttribute("name", `{${tagEl.value}}`);
-							tagText.setAttribute("contenteditable", "false");
-							tag.classList.remove("clTag__tag--editable");
+							tagData = tagEl;
 						}
 					});
+
+					if (tagData) {
+						tag.setAttribute("name", `{${tagData.value}}`);
+						tagText.textContent = tagData.label;
+						tagText.setAttribute("contenteditable", "false");
+						tag.classList.remove("tagly__tag--editable");
+					}
 				} else {
-					allowedTags.forEach(tagEl => {
-						if (tagEl.value === tagText.textContent) {
-							tagText.textContent = tagEl.label;
-						}
-					});
+					tag.setAttribute("name", `{${tagText.textContent}}`);
 					tagText.setAttribute("contenteditable", "false");
-					tag.classList.remove("clTag__tag--editable");
+					tag.classList.remove("tagly__tag--editable");
 				}
 
 				(tagText as HTMLSpanElement).blur();
@@ -413,18 +425,19 @@ export default class TagInput {
 		if (removeBtn) {
 			removeBtn.addEventListener("click", () => {
 				if (tag.parentNode && tag) {
-					//removing from "tags" array
-					this.tags.splice(
-						this.tags.indexOf(tag.getAttribute("name")),
-						1
-					);
-
-					const range = window.getSelection().getRangeAt(0);
-					range.selectNode(tag);
-					range.deleteContents();
+					this.removeTag(tag);
 				}
 			});
 		}
+	}
+
+	removeTag(tag: Element) {
+		//removing from "tags" array
+		this.tags.splice(this.tags.indexOf(tag.getAttribute("name")), 1);
+
+		const range = window.getSelection().getRangeAt(0);
+		range.selectNode(tag);
+		range.deleteContents();
 	}
 
 	injectHTMLAtCaret(html: HTMLDivElement | string) {
@@ -475,7 +488,7 @@ export default class TagInput {
 				if (
 					//TODO use better comparison
 					(sel.focusNode.parentNode as any).className ===
-					"clTag__tag-text"
+					"tagly__tag-text"
 				) {
 					range.setStartAfter(
 						sel.focusNode.parentNode.parentNode.parentNode

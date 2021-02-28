@@ -1,3 +1,5 @@
-import Tagly from "./react.cooltag";
+import TaglyReact from "./react.tagly";
+import Tagly from './tagly'
 
-export { Tagly };
+export {Tagly, TaglyReact }
+ 

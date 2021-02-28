@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from "react";
 
 import "./mystyles.scss";
-import TagInput from "./cooltag";
+import Tagly from "./tagly";
 
 interface Props {
 	readOnly?: boolean;
@@ -22,7 +22,7 @@ const defaultProps = {
 	allowedTags: [],
 	mixed: true,
 	defaultValue: "",
-	containerClassName: "clTag",
+	containerClassName: "tagly",
 	duplicate: true
 };
 
@@ -42,7 +42,7 @@ const TaglyReactComponent: React.FunctionComponent<Props> = ({
 	}, [])
 
 	useEffect(() => {
-		const coolTag = new TagInput({
+		const tagly = new Tagly({
 			containerClassName,
 			readOnly,
 			allowedTags,
@@ -51,27 +51,18 @@ const TaglyReactComponent: React.FunctionComponent<Props> = ({
 			mixed
 		});
 
-		let values: string | string[]
-		if(!mixed && !Array.isArray(defaultValue)){
-			values = [defaultValue]
-		} else {
-			values = defaultValue
-		}
+		tagly.initWithValue(defaultValue);
 
-		coolTag.initWithValue(values);
-
-		innerRef.current = coolTag;
-
-		
+		innerRef.current = tagly;	
 
 		return () => {
-			coolTag.destroy();
+			tagly.destroy();
 		};
 	}, []);
 
 	return (
 		<React.Fragment>
-			<div className='clTag'></div>
+			<div className='tagly'></div>
 		</React.Fragment>
 	);
 };
