@@ -145,6 +145,8 @@ import React, {useRef} from 'react';
 import {TaglyReact} from 'tagly'
 
 function App(){
+const tagly = useRef(null)
+
 
 return (
 	<div> 
@@ -168,8 +170,6 @@ return (
 	</div>
 	)
 }
-const tagly = useRef(null)
-
 
 ```
 
