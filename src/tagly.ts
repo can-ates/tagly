@@ -36,10 +36,13 @@ export default class Tagly {
 		const isMixed = this.options.mixed;
 		const allowedTags = this.options.allowedTags;
 
-		this.editableMainDiv.addEventListener(
-			"keydown",
-			isMixed ? this.handleMixedKeyDown : this.handleKeyDown
-		);
+		!isMixed &&
+			this.editableMainDiv.addEventListener(
+				"keydown",
+				this.handleKeyDown
+			);
+
+		
 
 		this.editableMainDiv.addEventListener("keyup", this.handleKeyUp);
 
@@ -124,6 +127,9 @@ export default class Tagly {
 
 	//check if tag has been deleted by backspace
 	handleKeyUp = () => {
+		if(this.options.mixed){
+			this.validateMixedString()
+		}
 		if (!this.editMode) {
 			this.tags.forEach(tag => {
 				if (this.inputValue?.indexOf(tag) < 0) {
@@ -393,7 +399,7 @@ export default class Tagly {
 
 				if (tagText.textContent === "") {
 					this.removeTag(tag);
-					return
+					return;
 				}
 
 				if (allowedTags.length > 0) {
