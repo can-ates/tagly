@@ -83,6 +83,8 @@ Duplicate option allows or disallows tags to be created more than one.
 A whitelist in which only specified tag data will be represented as tag. If a tag data does not exist in list, it will be treated as a string.
 Tagly does not accept any kind of data structure. It must contain **label** and **value**. 
 
+<img src="/demo/allowedTags.gif">
+
 ```javascript
 const options = {
   //...options
@@ -92,6 +94,7 @@ const options = {
   }]
  }
 ```
+
 
 <a name="readOnlyOption"></a>
 ##### readOnly (optional, defaults to `true`)
